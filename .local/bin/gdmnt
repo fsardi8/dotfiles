@@ -1,0 +1,153 @@
+ #!/usr/bin/env bash  
+set -euo pipefail  
+  
+BASE_DIR="$HOME/gd"  
+CACHE_DIR="$HOME/.rclone-cache"  
+LOG_DIR="$CACHE_DIR/logs"  
+RCLONE_CONF="$HOME/.config/rclone/rclone.conf"  
+  
+mkdir -p "$BASE_DIR" "$CACHE_DIR" "$LOG_DIR"  
+  
+COMMON_OPTS=(  
+ --config "$RCLONE_CONF"  
+ --allow-other  
+ --cache-dir "$CACHE_DIR"  
+ --dir-cache-time 1h  
+ --poll-interval 1m  
+ --timeout 30s  
+ --retries 3  
+ --low-level-retries 10  
+ --umask 002  
+ --daemon  
+)  
+  
+FAST_OPTS=(  
+ --vfs-cache-mode writes  
+ --vfs-cache-max-age 24h  
+ --vfs-cache-max-size 1G  
+ --buffer-size 128M  
+ --vfs-read-chunk-size 32M  
+ --vfs-read-chunk-size-limit 1G  
+)  
+  
+# Remote -> mountpoint mapping  
+declare -A MOUNTPOINTS=(  
+ ["gdrive"]="$BASE_DIR/My Drive"  
+  
+ ["alma"]="$BASE_DIR/Alma"  
+ ["alma-contabilidad-y-laboral"]="$BASE_DIR/Alma-Contabilidad y Laboral"  
+ ["alma-fotos-y-videos"]="$BASE_DIR/Alma-Fotos y Videos"  
+ ["alma-legal"]="$BASE_DIR/Alma-Legal"  
+ ["alma-pertenencia"]="$BASE_DIR/Alma-Pertenencia"  
+ ["alma-socios"]="$BASE_DIR/Alma-Socios"  
+  
+ ["redsi"]="$BASE_DIR/Redsi"  
+ ["redsi-contabilidad-y-laboral"]="$BASE_DIR/Redsi-Contabilidad y Laboral"  
+ ["redsi-legal"]="$BASE_DIR/Redsi-Legal"  
+ ["redsi-operaciones"]="$BASE_DIR/Redsi-Operaciones"  
+  
+ ["bluefiber"]="$BASE_DIR/Bluefiber"  
+ ["bluefiber-contabilidad"]="$BASE_DIR/Bluefiber-Contabilidad"  
+ ["bluefiber-socios"]="$BASE_DIR/Bluefiber-Socios"  
+  
+ ["hermes"]="$BASE_DIR/Hermes"  
+ ["installers"]="$BASE_DIR/Installers"  
+ ["lolo"]="$BASE_DIR/Lolo"  
+ ["u-sabana"]="$BASE_DIR/U-Sabana"  
+)  
+  
+FAST_REMOTES=(  
+ gdrive  
+  
+ alma  
+ alma-contabilidad-y-laboral  
+ alma-fotos-y-videos  
+ alma-legal  
+ alma-pertenencia  
+ alma-socios  
+  
+ redsi  
+ redsi-contabilidad-y-laboral  
+ redsi-legal  
+ redsi-operaciones  
+  
+ bluefiber  
+ bluefiber-contabilidad  
+ bluefiber-socios  
+  
+ hermes  
+ installers  
+ lolo  
+ u-sabana  
+)  
+  
+is_mounted() { mountpoint -q "$1"; }  
+  
+mount_one() {  
+ local remote="$1"  
+ local mp="${MOUNTPOINTS[$remote]:-}"  
+ [[ -n "$mp" ]] || { echo "!! No mountpoint mapping for remote: $remote"; return 1; }  
+  
+ mkdir -p "$mp"  
+ if is_mounted "$mp"; then  
+   echo "== Already mounted: $remote -> $mp"  
+   return 0  
+ fi  
+  
+ local logfile="$LOG_DIR/rclone-mount-${remote}.log"  
+ echo "== Mounting: $remote -> $mp"  
+ rclone mount "${remote}:" "$mp" \  
+   "${COMMON_OPTS[@]}" "${FAST_OPTS[@]}" \  
+   --log-file "$logfile" --log-level INFO  
+  
+ sleep 1  
+ is_mounted "$mp" && echo "   ✓ Mounted: $mp" || { echo "   ✗ Failed: $remote (log: $logfile)"; return 1; }  
+}  
+  
+do_start() {  
+ echo "Mounting into: $BASE_DIR"  
+ echo "Cache: $CACHE_DIR"  
+ echo "Logs:  $LOG_DIR"  
+ echo "Conf:  $RCLONE_CONF"  
+ echo  
+  
+ for r in "${FAST_REMOTES[@]}"; do  
+   mount_one "$r"  
+ done  
+  
+ echo  
+ echo "Mounted under $BASE_DIR:"  
+ findmnt -t fuse.rclone 2>/dev/null | grep -F "$BASE_DIR" || echo "(none)"  
+}  
+  
+do_stop() {  
+ echo "Stopping mounts under: $BASE_DIR"  
+  
+ mapfile -t mps < <(  
+   findmnt -rn -t fuse.rclone -o TARGET \  
+   | grep -F "$BASE_DIR/" \  
+   | while IFS= read -r l; do printf '%b\n' "$l"; done \  
+   | awk '{print length, $0}' | sort -rn | cut -d" " -f2-  
+ )  
+  
+ local -a um=(umount)  
+ command -v fusermount3 >/dev/null 2>&1 && um=(fusermount3 -u)  
+  
+ for mp in "${mps[@]}"; do  
+   echo "== Unmounting: $mp"  
+   "${um[@]}" "$mp" || umount -l "$mp" || true  
+ done  
+}  
+  
+  
+  
+do_status() {  
+ findmnt -t fuse.rclone 2>/dev/null | grep -F "$BASE_DIR" || echo "(none)"  
+}  
+  
+case "${1:-start}" in  
+ start)  do_start ;;  
+ stop)   do_stop ;;  
+ status) do_status ;;  
+ *) echo "Usage: gdmnt {start|stop|status}"; exit 2 ;;  
+esac  
