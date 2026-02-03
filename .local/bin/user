@@ -1,1 +1,0 @@
-agroup() { sudo usermod -aG "$1" "${2:-$USER}"; }
