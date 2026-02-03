@@ -15,6 +15,7 @@ Usage:
   dot unskip FILE...  # resume tracking changes
   dot com MESSAGE...  # commit with message
   dot amend           # amend last commit
+  dot pull            # pull from origin
   dot push            # push to origin
   dot sync [MESSAGE]  # add -u, commit, push
 
@@ -66,6 +67,10 @@ case "$cmd" in
 
   amend)
     yadm commit --amend
+    ;;
+
+  pull)
+    yadm pull
     ;;
 
   push)
