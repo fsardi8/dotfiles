@@ -64,7 +64,6 @@ alias amr2wav='for f in *.amr; do ffmpeg -i "$f" -ar 16000 -ac 1 "${f%.amr}.wav"
 # ─────────────────────────────────────────────────────────────
 alias blkidl='blkid -o list'
 alias mntl='mount | column -t'
-alias df='df -h'
 alias du='du -ch'
 alias dud='du -d 1 -h | sort -h'              # sorted dir sizes
 alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
