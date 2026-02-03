@@ -68,26 +68,6 @@ alias df='df -h'
 alias du='du -ch'
 alias dud='du -d 1 -h | sort -h'              # sorted dir sizes
 alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
-trim() {
-  if (( $# )); then
-    sudo fstrim -v "$@"
-  else
-    sudo fstrim -av
-  fi
-}
-btl() { sudo btrfs subvolume list -t "${1:-.}"; }
-bscrub() { sudo btrfs scrub start -Bd "${1:-/}"; }
-bchk() { sudo btrfs check --readonly "${1:?usage: bchk /dev/XXX}"; }
-chk() { sudo e2fsck -p -f -C 0 "$@"; }
-dedup() { sudo duperemove -drh "${1:?usage: dedup /path}"; }  # duperemove
-hdspeed() {
-  local f
-  f="$(mktemp -p "${TMPDIR:-/tmp}" hdspeed.XXXXXX)" || return 1
-  dd if=/dev/zero of="$f" bs=1M count=1024 oflag=direct status=progress
-  sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
-  dd if="$f" of=/dev/null bs=1M iflag=direct status=progress
-  rm -f "$f"
-}
 
 # ─────────────────────────────────────────────────────────────
 # Navigation

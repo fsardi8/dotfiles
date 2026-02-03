@@ -16,55 +16,46 @@ disks() {
   df -hT
 }
 
-trim() {
-  if (( $# )); then
-    sudo fstrim -v "$@"
-  else
-    sudo fstrim -av
+blist() { sudo btrfs subvolume list -t "${1:-.}"; }
+bsize() { sudo btrfs filesystem du -s --human-readable "${1:-.}"; }
+
+scrub() {
+  local mp="${1:-$PWD}"
+
+  # Resolve and validate mountpoint
+  if ! findmnt -T "$mp" >/dev/null 2>&1; then
+    echo "ERROR: not a mountpoint or not mounted: $mp" >&2
+    return 1
   fi
+  mp="$(findmnt -no TARGET -T "$mp")"
+
+  local fstype
+  fstype="$(findmnt -no FSTYPE -T "$mp")"
+  if [[ "$fstype" != "btrfs" ]]; then
+    echo "ERROR: $mp is not btrfs (fstype=$fstype)" >&2
+    return 1
+  fi
+
+  # If a scrub is already running, show status and exit cleanly
+  if sudo btrfs scrub status -d "$mp" 2>/dev/null | grep -qi "running"; then
+    echo "== scrub already running =="
+    sudo btrfs scrub status -d "$mp"
+    return 0
+  fi
+
+  echo "== starting scrub in background =="
+  echo "== filesystem: $mp =="
+  sudo btrfs scrub start "$mp"
+  sudo btrfs scrub status -d $mp
+
+  echo
+  echo "== check status =="
+  echo "sudo btrfs scrub status -d $mp"
+  echo "watch -n 5 sudo btrfs scrub status -d $mp"
 }
 
-btl() { sudo btrfs subvolume list -t "${1:-.}"; }
+btchk() { sudo btrfs check --readonly "${1:?usage: btchk /dev/XXX}"; }
 
-btrscrub() {
-  local MP="${1:-$PWD}"
-
-  sudo bash -lc 'set -euo pipefail
-MP="$1"
-
-# Resolve to a real mountpoint (works if you pass a subdir)
-if ! findmnt -T "$MP" >/dev/null 2>&1; then
-  echo "ERROR: not a mountpoint or not mounted: $MP" >&2
-  exit 1
-fi
-MP="$(findmnt -no TARGET -T "$MP")"
-
-FSTYPE="$(findmnt -no FSTYPE -T "$MP")"
-if [ "$FSTYPE" != "btrfs" ]; then
-  echo "ERROR: $MP is not btrfs (fstype=$FSTYPE)" >&2
-  exit 1
-fi
-
-echo "== starting scrub in background for: $MP =="
-btrfs scrub start "$MP"
-
-echo
-echo "== check status =="
-echo "sudo btrfs scrub status -d $MP"
-echo
-echo "== watch until done =="
-echo "watch -n 2 sudo btrfs scrub status -d $MP"
-echo
-echo "== see errors / counters =="
-echo "sudo btrfs device stats $MP"
-echo
-echo "== stop scrub if needed =="
-echo "sudo btrfs scrub cancel $MP"
-' bash "$MP"
-}
-
-bscrub() { sudo btrfs scrub start -Bd "${1:-/}"; }
-bchk() { sudo btrfs check --readonly "${1:?usage: bchk /dev/XXX}"; }
 chk() { sudo e2fsck -p -f -C 0 "$@"; }
 dedup() { sudo duperemove -drh "${1:?usage: dedup /path}"; }  # duperemove
 
@@ -81,4 +72,12 @@ part() {
   [ -n "$1" ] || { echo "Usage: part <disk>"; return 1; }
   [ -b "/dev/$1" ] || { echo "No such block device: /dev/$1"; return 1; }
   sudo cfdisk "/dev/$1" && sudo partprobe "/dev/$1"
+}
+
+trim() {
+  if (( $# )); then
+    sudo fstrim -v "$@"
+  else
+    sudo fstrim -av
+  fi
 }
