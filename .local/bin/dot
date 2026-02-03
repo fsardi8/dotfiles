@@ -11,6 +11,8 @@ Usage:
   dot ls              # list tracked files
   dot diff            # yadm diff
   dot add FILE...     # stage specific files
+  dot skip FILE...    # ignore local changes (this machine only)
+  dot unskip FILE...  # resume tracking changes
   dot com MESSAGE...  # commit with message
   dot amend           # amend last commit
   dot push            # push to origin
@@ -45,6 +47,16 @@ case "$cmd" in
   add)
     [[ $# -gt 0 ]] || { echo "dot add: missing file(s)"; exit 2; }
     yadm add "$@"
+    ;;
+
+  skip)
+    [[ $# -gt 0 ]] || { echo "dot skip: missing file(s)"; exit 2; }
+    yadm update-index --assume-unchanged "$@"
+    ;;
+
+  unskip)
+    [[ $# -gt 0 ]] || { echo "dot unskip: missing file(s)"; exit 2; }
+    yadm update-index --no-assume-unchanged "$@"
     ;;
 
   com|commit)
