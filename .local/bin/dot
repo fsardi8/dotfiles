@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+dot — thin wrapper around yadm
+
+Usage:
+  dot st                 # status
+  dot ls                 # list tracked files
+  dot add FILE...        # stage specific files
+  dot com MESSAGE...     # commit with message (no -m needed)
+  dot push               # push to origin
+  dot sync               # add -u, commit, push (safe default)
+
+Notes:
+- dot sync only stages tracked files (yadm add -u)
+- secrets must remain untracked
+EOF
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  st|status)
+    yadm status
+    ;;
+
+  ls)
+    yadm ls-files
+    ;;
+
+  add)
+    [[ $# -gt 0 ]] || { echo "dot add: missing file(s)"; exit 2; }
+    yadm add "$@"
+    ;;
+
+  com|commit)
+    [[ $# -gt 0 ]] || { echo "dot com: missing commit message"; exit 2; }
+    yadm commit -m "$*"
+    ;;
+
+  push)
+    yadm push
+    ;;
+
+  sync)
+    yadm add -u
+    if yadm diff --cached --quiet; then
+      echo "Nothing to commit."
+    else
+      yadm commit -m "sync: $(hostname) $(date +%F)"
+      yadm push
+    fi
+    ;;
+
+  help|-h|--help|"")
+    usage
+    ;;
+
+  *)
+    echo "Unknown command: $cmd"
+    usage
+    exit 2
+    ;;
+esac
