@@ -6,15 +6,18 @@ usage() {
 dot — thin wrapper around yadm
 
 Usage:
-  dot st                 # status
-  dot ls                 # list tracked files
-  dot add FILE...        # stage specific files
-  dot com MESSAGE...     # commit with message (no -m needed)
-  dot push               # push to origin
-  dot sync               # add -u, commit, push (safe default)
+  dot                 # show this help
+  dot st              # yadm status
+  dot ls              # list tracked files
+  dot diff            # yadm diff
+  dot add FILE...     # stage specific files
+  dot com MESSAGE...  # commit with message
+  dot amend           # amend last commit
+  dot push            # push to origin
+  dot sync [MESSAGE]  # add -u, commit, push
 
 Notes:
-- dot sync only stages tracked files (yadm add -u)
+- dot sync stages only tracked files (safe)
 - secrets must remain untracked
 EOF
 }
@@ -23,12 +26,20 @@ cmd="${1:-}"
 shift || true
 
 case "$cmd" in
+  ""|-h|--help|help)
+    usage
+    ;;
+
   st|status)
     yadm status
     ;;
 
   ls)
     yadm ls-files
+    ;;
+
+  diff)
+    yadm diff
     ;;
 
   add)
@@ -41,22 +52,23 @@ case "$cmd" in
     yadm commit -m "$*"
     ;;
 
+  amend)
+    yadm commit --amend
+    ;;
+
   push)
     yadm push
     ;;
 
   sync)
+    msg="${*:-sync: $(hostname) $(date +%F)}"
     yadm add -u
     if yadm diff --cached --quiet; then
       echo "Nothing to commit."
     else
-      yadm commit -m "sync: $(hostname) $(date +%F)"
+      yadm commit -m "$msg"
       yadm push
     fi
-    ;;
-
-  help|-h|--help|"")
-    usage
     ;;
 
   *)
