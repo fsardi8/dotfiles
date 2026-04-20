@@ -1,1 +1,3 @@
 .config/cf-ddns.env
+.config/rclone/rclone.conf
+.local/bin/claude
