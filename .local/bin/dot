@@ -9,7 +9,8 @@ Usage:
   dot                 # show this help
   dot st              # yadm status
   dot ls              # list tracked files
-  dot diff            # yadm diff
+  dot diff            # yadm diff (local vs last commit)
+  dot review          # diff local files vs origin (GitHub)
   dot add FILE...     # stage specific files
   dot skip FILE...    # ignore local changes (this machine only)
   dot unskip FILE...  # resume tracking changes
@@ -43,6 +44,16 @@ case "$cmd" in
 
   diff)
     yadm diff
+    ;;
+
+  review)
+    yadm fetch origin 2>/dev/null
+    branch=$(yadm symbolic-ref --short HEAD 2>/dev/null || echo "master")
+    if yadm diff "origin/$branch" --quiet 2>/dev/null; then
+      echo "Local is in sync with origin/$branch."
+    else
+      yadm diff "origin/$branch"
+    fi
     ;;
 
   add)
