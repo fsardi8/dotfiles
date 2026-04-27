@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Package Management
+# Package Management-change
 # ─────────────────────────────────────────────────────────────
 alias ai='sudo apt install -y'
 alias ar='sudo apt purge -y'
