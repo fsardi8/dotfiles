@@ -20,7 +20,7 @@ alias bc='bc -l'
 alias h='history'
 alias j='jobs -l'
 alias py='python3'
-alias cls=clear
+alias c=clear
 
 # ─────────────────────────────────────────────────────────────
 # System Info
@@ -73,8 +73,9 @@ alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
 # ─────────────────────────────────────────────────────────────
 alias etc='cd /etc'
 alias mnt='cd /mnt'
-alias bak='cd /mnt/zen/backup/mikrotik'
+alias bak='cd /mnt/zen/backup/'
 alias media='cd /mnt/zen/media'
+alias tik='cd /mnt/zen/redsi/mikrotik'
 alias zen='cd /mnt/zen'
 alias ..='cd ..'
 alias ...='cd ../..'
@@ -151,6 +152,8 @@ alias ofr='ssh f@10.48.48.88'
 alias g2='ssh f@10.85.85.1'
 alias vr='ssh f@10.48.48.1'
 alias vb='ssh f@10.47.48.0'
+alias vk='ssh f@10.48.48.101'
+alias pv='ssh root@10.48.48.99'
 
 # ─────────────────────────────────────────────────────────────
 # Utilities

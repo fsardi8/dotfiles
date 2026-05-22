@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# zen-backup — btrfs snapshot + send incremental a pi5
+# Uso: zen-backup [-n] [-k N] [-r N] [-h]
+#   -n      dry-run: crear snapshot local pero no enviar a pi5
+#   -k N    keepar N snapshots locales  (default: 7)
+#   -r N    keepar N snapshots remotos  (default: 30)
+#   -h      mostrar este mensaje
+#
+# Dependencias: btrfs-progs, pv, mbuffer, ssh con clave configurada
+# Requiere:     sudo NOPASSWD para btrfs en local y en pi5
+# ─────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+# ── Configuración ────────────────────────────────────────
+SUBVOL="/mnt/zen"
+SNAP_DIR="/mnt/zen/.snapshots"
+REMOTE_HOST="f@pi5"
+REMOTE_DIR="/srv/backup/FSC/zen"
+LOG_DIR="$HOME/.local/share/zen-backup"
+# ─────────────────────────────────────────────────────────
+
+# ── Defaults ─────────────────────────────────────────────
+DRY_RUN=false
+KEEP_LOCAL=7
+KEEP_REMOTE=30
+# ─────────────────────────────────────────────────────────
+
+usage() {
+  grep '^#' "$0" | grep -v '#!/' | sed 's/^# \?//'
+  exit 0
+}
+
+log() { echo "[$(date +%H:%M:%S)] $*"; }
+die() { echo "ERROR: $*" >&2; exit 1; }
+
+# ── Parse args ───────────────────────────────────────────
+while getopts "nk:r:h" opt; do
+  case $opt in
+    n) DRY_RUN=true ;;
+    k) KEEP_LOCAL="$OPTARG" ;;
+    r) KEEP_REMOTE="$OPTARG" ;;
+    h) usage ;;
+    *) usage ;;
+  esac
+done
+
+# ── Validaciones ─────────────────────────────────────────
+[[ -d "$SUBVOL" ]]   || die "Subvolumen no encontrado: $SUBVOL"
+sudo btrfs subvolume show "$SUBVOL" &>/dev/null || die "No es un subvolumen btrfs: $SUBVOL"
+command -v pv      &>/dev/null || die "pv no instalado:      sudo apt install pv"
+command -v mbuffer &>/dev/null || die "mbuffer no instalado: sudo apt install mbuffer"
+
+# ── Setup ────────────────────────────────────────────────
+mkdir -p "$LOG_DIR"
+SNAP_NAME="$(date +%Y-%m-%d_%H:%M:%S)"
+SNAP_PATH="$SNAP_DIR/$SNAP_NAME"
+REMOTE_SNAP="$REMOTE_DIR/$SNAP_NAME"
+LOG_FILE="$LOG_DIR/$SNAP_NAME.log"
+
+# Redirigir output a log Y stdout
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log "=== zen-backup iniciando ==="
+log "Snapshot: $SNAP_NAME"
+log "Dry-run:  $DRY_RUN"
+
+# ── Dry-run: salir antes del send ────────────────────────
+if [[ "$DRY_RUN" == true ]]; then
+  log "Dry-run activo — omitiendo send a $REMOTE_HOST"
+  log "Hubiera enviado: $SNAP_PATH"
+  [[ -n "$PREV_NAME" && "$PREV_NAME" != "$SNAP_NAME" ]] \
+    && log "Con parent:      $PREV_PATH" \
+    || log "Modo:            full send (sin parent)"
+  exit 0
+fi
+
+# ── Snapshot local readonly ───────────────────────────────
+sudo mkdir -p "$SNAP_DIR"
+log "Creando snapshot readonly..."
+sudo btrfs subvolume snapshot -r "$SUBVOL" "$SNAP_PATH"
+log "Snapshot creado: $SNAP_PATH"
+
+# ── Buscar parent para incremental ───────────────────────
+# Penúltimo snapshot local (ordenado por nombre/fecha)
+PREV_NAME=$(ls "$SNAP_DIR" | sort | tail -2 | head -1)
+PREV_PATH="$SNAP_DIR/$PREV_NAME"
+
+# ── Conectividad con pi5 ─────────────────────────────────
+ssh "$REMOTE_HOST" "sudo mkdir -p '$REMOTE_DIR'" \
+  || die "No se puede conectar a $REMOTE_HOST"
+
+# ── Limpiar subvolumen parcial en pi5 si existe ──────────
+log "Verificando parciales en pi5..."
+PARTIAL=$(ssh "$REMOTE_HOST" "
+  sudo btrfs subvolume list '$REMOTE_DIR' 2>/dev/null \
+  | awk '{print \$NF}' \
+  | grep -F '$SNAP_NAME' || true
+")
+
+if [[ -n "$PARTIAL" ]]; then
+  log "⚠ Parcial detectado en pi5: $SNAP_NAME — limpiando..."
+  ssh "$REMOTE_HOST" "sudo btrfs subvolume delete '$REMOTE_SNAP'" \
+    && log "Parcial eliminado." \
+    || die "No se pudo eliminar parcial en pi5 — intervención manual requerida"
+fi
+
+# ── Función de send con manejo de fallos ─────────────────
+send_to_pi5() {
+  local exit_code=0
+
+  if [[ -n "$PREV_NAME" && "$PREV_NAME" != "$SNAP_NAME" && -d "$PREV_PATH" ]]; then
+    log "Modo incremental, parent: $PREV_NAME"
+    sudo btrfs send -p "$PREV_PATH" "$SNAP_PATH" \
+      | mbuffer -s 128k -m 512M \
+      | pv \
+      | ssh "$REMOTE_HOST" "mbuffer -s 128k -m 512M | sudo btrfs receive '$REMOTE_DIR'" \
+      || exit_code=$?
+  else
+    log "Modo full send (primer backup o sin parent válido)"
+    sudo btrfs send "$SNAP_PATH" \
+      | mbuffer -s 128k -m 512M \
+      | pv \
+      | ssh "$REMOTE_HOST" "mbuffer -s 128k -m 512M | sudo btrfs receive '$REMOTE_DIR'" \
+      || exit_code=$?
+  fi
+
+  # Si falló: limpiar parcial remoto y snapshot local para
+  # no contaminar el próximo run con un parent inválido
+  if [[ $exit_code -ne 0 ]]; then
+    log "⚠ Send falló (exit $exit_code) — limpiando..."
+    ssh "$REMOTE_HOST" \
+      "sudo btrfs subvolume delete '$REMOTE_SNAP' 2>/dev/null || true"
+    log "⚠ Parcial remoto eliminado."
+    log "⚠ Borrando snapshot local para evitar parent corrupto..."
+    sudo btrfs subvolume delete "$SNAP_PATH"
+    log "⚠ Snapshot local eliminado."
+    die "Send interrumpido — reintenta con: zen-backup"
+  fi
+}
+
+send_to_pi5
+
+# ── Symlink current ───────────────────────────────────────
+log "Actualizando symlink current..."
+ssh "$REMOTE_HOST" "ln -sfn '$REMOTE_DIR/$SNAP_NAME' '$REMOTE_DIR/current'"
+
+# ── Rotación local ───────────────────────────────────────
+log "Rotación local: keepando últimos $KEEP_LOCAL snapshots..."
+TO_DEL_LOCAL=$(ls "$SNAP_DIR" | sort | head -n -"$KEEP_LOCAL")
+for snap in $TO_DEL_LOCAL; do
+  log "  Borrando local: $snap"
+  sudo btrfs subvolume delete "$SNAP_DIR/$snap"
+done
+
+# ── Rotación remota ───────────────────────────────────────
+log "Rotación remota: keepando últimos $KEEP_REMOTE snapshots..."
+ssh "$REMOTE_HOST" "
+  TO_DEL=\$(ls '$REMOTE_DIR' | grep -E '^[0-9]{4}-' | sort | head -n -$KEEP_REMOTE)
+  for snap in \$TO_DEL; do
+    echo '  Borrando remoto: '\$snap
+    sudo btrfs subvolume delete '$REMOTE_DIR/'\$snap
+  done
+"
+
+log "=== zen-backup completado ==="
+log "Log: $LOG_FILE"

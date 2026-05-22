@@ -127,3 +127,7 @@ for f in "$HOME/.config/bash/rc.d/"*.sh; do
   [[ -r "$f" ]] && . "$f"
 done
 unset f
+
+export PATH=/home/f/bin:$PATH
+
+[[ -e "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh" ]] && source "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh"
