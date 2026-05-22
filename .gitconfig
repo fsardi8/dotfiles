@@ -1,3 +1,5 @@
 [user]
 	email = f@redsi.co
 	name = Felipe Sardi
+[core]
+	excludesfile = /home/f/.gitignore_global
