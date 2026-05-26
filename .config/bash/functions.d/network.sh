@@ -36,7 +36,7 @@ ipuf() {
 # and: chmod 600 ~/.config/cf-ddns.env
 # -------------------------
   local env="$HOME/.config/cf-ddns.env"
-  [[ -r "$env" ]] || { echo "Missing $env (see comments in ~/.bash_aliases)"; return 1; }
+  [[ -r "$env" ]] || { echo "Missing $env — ver README del repo dotfiles o yadm decrypt"; return 1; }
   source "$env"
 
   : "${CF_ZONE_ID:?Missing CF_ZONE_ID}" "${CF_API_TOKEN:?Missing CF_API_TOKEN}" "${CF_RECORD_NAME:?Missing CF_RECORD_NAME}"

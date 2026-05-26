@@ -102,9 +102,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
+# aliases y funciones cargadas vía rc.d/20-aliases.sh y rc.d/30-functions.sh
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -118,7 +116,7 @@ if ! shopt -oq posix; then
 fi
 
 # Custom PATH
-export PATH="$PATH:/mnt/zen/applications"
+[[ -d /mnt/zen/applications ]] && export PATH="$PATH:/mnt/zen/applications"
 export PATH="$HOME/.local/bin:$PATH"
 
 # Load modular bash config (interactive shells only)
@@ -128,6 +126,7 @@ for f in "$HOME/.config/bash/rc.d/"*.sh; do
 done
 unset f
 
-export PATH=/home/f/bin:$PATH
+[[ -d "$HOME/bin" ]] && export PATH="$HOME/bin:$PATH"
 
-[[ -e "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh" ]] && source "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh"
+[[ -e "$HOME/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh" ]] && \
+  source "$HOME/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh"

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# yadm bootstrap — se ejecuta automáticamente tras: yadm clone
+# No hace falta correrlo manualmente; install.sh ya lo llama vía yadm.
+set -euo pipefail
+
+ok()   { echo "✔  $*"; }
+info() { echo "→  $*"; }
+warn() { echo "⚠  $*"; }
+
+# ── Servicios systemd de usuario ─────────────────────────
+info "Habilitando servicios de usuario..."
+if systemctl --user list-unit-files syncthingy.service &>/dev/null; then
+  systemctl --user enable --now syncthingy.service && ok "syncthingy habilitado"
+else
+  warn "syncthingy.service no disponible (¿Flatpak no instalado?)"
+fi
+
+# ── GPG key trust ────────────────────────────────────────
+GPG_KEY_ID="A28F843C63852BF6"
+if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
+  echo "${GPG_KEY_ID}:6:" | gpg --import-ownertrust &>/dev/null
+  ok "GPG key trust → ultimate"
+else
+  warn "Llave GPG no importada — ejecuta: gpg --import y luego: yadm decrypt"
+fi
+
+ok "Bootstrap completo"

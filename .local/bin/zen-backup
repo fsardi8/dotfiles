@@ -65,11 +65,16 @@ log "=== zen-backup iniciando ==="
 log "Snapshot: $SNAP_NAME"
 log "Dry-run:  $DRY_RUN"
 
+# ── Buscar parent para incremental ───────────────────────
+# Último snapshot existente antes de crear el nuevo
+PREV_NAME=$(ls "$SNAP_DIR" 2>/dev/null | sort | tail -1)
+PREV_PATH="$SNAP_DIR/$PREV_NAME"
+
 # ── Dry-run: salir antes del send ────────────────────────
 if [[ "$DRY_RUN" == true ]]; then
   log "Dry-run activo — omitiendo send a $REMOTE_HOST"
   log "Hubiera enviado: $SNAP_PATH"
-  [[ -n "$PREV_NAME" && "$PREV_NAME" != "$SNAP_NAME" ]] \
+  [[ -n "$PREV_NAME" ]] \
     && log "Con parent:      $PREV_PATH" \
     || log "Modo:            full send (sin parent)"
   exit 0
@@ -80,11 +85,6 @@ sudo mkdir -p "$SNAP_DIR"
 log "Creando snapshot readonly..."
 sudo btrfs subvolume snapshot -r "$SUBVOL" "$SNAP_PATH"
 log "Snapshot creado: $SNAP_PATH"
-
-# ── Buscar parent para incremental ───────────────────────
-# Penúltimo snapshot local (ordenado por nombre/fecha)
-PREV_NAME=$(ls "$SNAP_DIR" | sort | tail -2 | head -1)
-PREV_PATH="$SNAP_DIR/$PREV_NAME"
 
 # ── Conectividad con pi5 ─────────────────────────────────
 ssh "$REMOTE_HOST" "sudo mkdir -p '$REMOTE_DIR'" \
