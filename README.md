@@ -3,6 +3,15 @@
 Dotfiles personales gestionados con [yadm](https://yadm.io) y el wrapper `dot`.  
 Incluye configuración de bash, SSH, rclone, GTK, y scripts de utilidad.
 
+## Instalación en una PC nueva
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/install.sh)
+```
+
+> Necesitas tener la **llave GPG privada** guardada en Bitwarden  
+> (Secure Note: `GPG private key - fsardi8`). El script la pide interactivamente — nunca viaja por la red.
+
 ---
 
 ## Archivos rastreados
