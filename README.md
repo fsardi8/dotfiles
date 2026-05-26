@@ -1,7 +1,8 @@
 # dotfiles — fsardi8
 
-Dotfiles personales gestionados con [yadm](https://yadm.io) y el wrapper `dot`.  
-Incluye configuración de bash, SSH, rclone, GTK, y scripts de utilidad.
+Dotfiles personales gestionados con [yadm](https://yadm.io) y el wrapper `dot`.
+
+---
 
 ## Instalación en una PC nueva
 
@@ -9,8 +10,179 @@ Incluye configuración de bash, SSH, rclone, GTK, y scripts de utilidad.
 bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/install.sh)
 ```
 
-> Necesitas tener la **llave GPG privada** guardada en Bitwarden  
-> (Secure Note: `GPG private key - fsardi8`). El script la pide interactivamente — nunca viaja por la red.
+Necesitas la **llave GPG privada** en Bitwarden (`GPG private key - fsardi8`).
+El script la pide interactivamente — nunca viaja por la red.
+
+---
+
+## La regla de oro: ¿qué va dónde?
+
+```
+¿Es secreto?
+    │
+    ├── SÍ → ¿lo necesitas en todas tus máquinas?
+    │            ├── SÍ → dot encrypt    (.ssh/id_rsa, rclone.conf, .env con tokens)
+    │            └── NO → déjalo fuera de todo
+    │
+    └── NO → ¿es igual en todas tus máquinas?
+                 ├── SÍ → dot add        (.bashrc, scripts, .gitconfig, .pub keys)
+                 └── NO → ni dot add ni encrypt
+                          (.config/gtk, qt5ct, user-dirs — cambian por tema/DPI)
+```
+
+### Ejemplos concretos
+
+| Archivo | Dónde | Por qué |
+|---------|-------|---------|
+| `~/.ssh/id_ed25519` (privada) | `dot encrypt` | secreta |
+| `~/.ssh/id_ed25519.pub` (pública) | `dot add` | no es secreta, es útil rastrearla |
+| `~/.config/rclone/rclone.conf` | `dot encrypt` | contiene tokens OAuth |
+| `~/.config/cf-ddns.env` | `dot encrypt` | contiene API keys de Cloudflare |
+| `~/.bashrc`, scripts, `.gitconfig` | `dot add` | no secretos, iguales en todas partes |
+| `~/.config/gtk-3.0/gtk.css` | ninguno | cambia por tema/máquina |
+| `~/.config/qt5ct/qt5ct.conf` | ninguno | cambia por DPI/resolución |
+
+---
+
+## Comandos `dot`
+
+### Día a día
+
+```bash
+dot sync                      # commitea todo lo ya-rastreado + push
+dot sync "mensaje descriptivo" # ídem con tu mensaje
+dot st                        # ver qué cambió
+dot diff                      # ver los cambios en detalle
+dot review                    # comparar local vs GitHub
+```
+
+### Agregar archivos
+
+```bash
+# Archivo normal (va a git, visible en GitHub):
+dot add ~/.config/micro/settings.json
+dot com "add micro config"
+
+# Archivo secreto (va cifrado con GPG, nunca en git en texto plano):
+dot encrypt ~/.config/nuevo-servicio.env
+dot com "encrypt: nuevo-servicio"
+```
+
+### Sincronización con GitHub
+
+| Comando | Qué hace |
+|---------|----------|
+| `dot pull` | GitHub → local. Úsalo al llegar a una PC desactualizada |
+| `dot push` | local → GitHub. Solo sube commits ya hechos |
+| `dot sync` | `add -u` + `commit` + `push` todo en uno |
+
+> `dot sync` solo commitea archivos **ya rastreados**. Para archivos nuevos: `dot add` primero.
+
+### Corregir el último commit
+
+```bash
+dot add ~/.archivo-olvidado    # agregar lo que faltó
+dot amend                      # corrige el commit (abre editor para el mensaje)
+yadm push --force-with-lease   # si ya habías hecho push, necesitas force
+```
+
+> `amend` solo funciona con el **último** commit y antes de que otros lo usen.
+
+### Otros
+
+```bash
+dot ls                   # listar todos los archivos rastreados
+dot skip ~/.bashrc       # ignorar cambios locales (solo en esta máquina)
+dot unskip ~/.bashrc     # reanudar el tracking
+```
+
+---
+
+## Cómo agregar un secreto nuevo
+
+```bash
+# 1. El archivo ya existe en disco
+dot encrypt ~/.config/nuevo.env
+
+# 2. Commitear
+dot com "encrypt: agrego nuevo.env"
+dot push
+```
+
+`dot encrypt` hace todo: agrega el path a `.config/yadm/encrypt`, re-cifra el archive y prepara el stage. Solo falta el commit.
+
+---
+
+## Setup manual en una PC nueva (paso a paso)
+
+Si prefieres no usar `install.sh`:
+
+```bash
+# 1. Instalar dependencias
+sudo apt install yadm git rclone gnupg   # Debian/Ubuntu/Pop!_OS
+sudo pacman -S yadm git rclone gnupg    # Arch/CachyOS
+
+# 2. Clonar via HTTPS (sin SSH key todavía)
+yadm clone https://github.com/fsardi8/dotfiles.git
+
+# 3. Importar llave GPG desde Bitwarden
+#    (copiar el bloque BEGIN/END PGP PRIVATE KEY del Secure Note)
+gpg --import   # pegar y Ctrl+D
+
+# 4. Descifrar secretos → restaura SSH keys, rclone.conf, cf-ddns.env
+yadm decrypt
+
+# 5. Cambiar remote a SSH (ya tienes la key)
+yadm remote set-url origin git@github.com:fsardi8/dotfiles.git
+
+# 6. Verificar
+rclone lsd alma:          # Google Drive debe listar carpetas
+ssh viking                # acceso via Tailscale
+```
+
+---
+
+## Recuperación desde otro disco (cuando el sistema no arranca)
+
+```bash
+# Montar la partición (btrfs con subvolúmenes)
+sudo mount /dev/sda4 /mnt/pop
+sudo mount -o subvol=@home /dev/sda4 /mnt/pop4
+
+# Copiar el keyring GPG
+cp /mnt/pop4/f/.gnupg/private-keys-v1.d/*.key ~/.gnupg/private-keys-v1.d/
+cp /mnt/pop4/f/.gnupg/pubring.kbx ~/.gnupg/pubring.kbx
+cp /mnt/pop4/f/.gnupg/trustdb.gpg ~/.gnupg/trustdb.gpg
+
+# Verificar y descifrar
+gpg --list-secret-keys
+yadm decrypt
+```
+
+---
+
+## Gestión de la llave GPG
+
+**Key ID:** `A28F843C63852BF6`  
+**UID:** Felipe Sardi `<f@redsi.co>`
+
+### Exportar (hacer esto al crear o renovar la llave)
+
+```bash
+gpg --export-secret-keys --armor A28F843C63852BF6
+# Copiar el bloque → Bitwarden → New Secure Note → "GPG private key - fsardi8"
+```
+
+### Dónde guardarla
+
+| Opción | Veredicto | Por qué |
+|--------|-----------|---------|
+| **Bitwarden** (Secure Note) | ✅ Mejor | Cifrado E2E + master password + 2FA. Accesible desde cualquier dispositivo |
+| **Papel impreso** | ✅ Backup adicional | No hackeable remotamente |
+| **GitHub** (repo privado) | ❌ Nunca | Un repo privado puede quedar expuesto |
+| **Disco sin cifrar** | ❌ Evitar | Si pierdes el disco, pierdes el control |
+
+> La llave ya tiene su propia passphrase — aunque alguien la robe de Bitwarden, no puede usarla sin ella. Son dos capas de protección.
 
 ---
 
@@ -21,143 +193,16 @@ bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/inst
 | Shell | `.bashrc`, `.bash_aliases`, `.profile`, `.config/bash/**` |
 | SSH | `.ssh/config`, `.ssh/*.pub` |
 | Git | `.gitconfig`, `.gitignore_global` |
-| UI | `.config/gtk-3.0/gtk.css`, `.config/gtk-4.0/gtk.css`, `qt5ct`, `qt6ct` |
 | Scripts | `.local/bin/dot`, `.local/bin/gdmnt`, `.local/bin/zen-backup`, … |
 | Systemd | `.config/systemd/user/syncthingy.service` |
-| **Secretos (cifrados con GPG)** | `.ssh/id_ed25519`, `.ssh/id_rsa`, `.config/rclone/rclone.conf`, `.config/cf-ddns.env` |
-
----
-
-## Comandos `dot`
-
-```
-dot st              # yadm status
-dot ls              # lista archivos rastreados
-dot diff            # diff local vs último commit
-dot review          # diff local vs origin (GitHub)
-dot add FILE...     # stage archivos específicos
-dot skip FILE...    # ignorar cambios locales (esta máquina)
-dot unskip FILE...  # reanudar tracking
-dot com MESSAGE     # commit
-dot amend           # amend último commit
-dot pull            # pull desde origin
-dot push            # push a origin
-dot sync [MSG]      # add -u + commit + push (solo archivos rastreados)
-```
-
----
-
-## Setup en una máquina nueva
-
-### 1. Instalar dependencias
-
-```bash
-sudo apt install yadm git rclone  # Debian/Ubuntu/Pop!_OS
-```
-
-### 2. Clonar el repo
-
-```bash
-yadm clone git@github.com:fsardi8/dotfiles.git
-```
-
-### 3. Importar la llave GPG
-
-Los secretos del repo están cifrados con GPG. Sin la llave no se pueden descifrar.
-
-**Opción A — desde Bitwarden (recomendado):**
-```bash
-# Copiar el contenido del secure note "GPG private key - fsardi8" de Bitwarden
-# y pegarlo en un archivo temporal:
-gpg --import /tmp/gpg-private.asc
-rm /tmp/gpg-private.asc   # borrar inmediatamente
-```
-
-**Opción B — desde otra máquina en la misma red:**
-```bash
-# En la máquina origen:
-gpg --export-secret-keys --armor A28F843C63852BF6 | ssh nueva-maquina 'gpg --import'
-```
-
-**Opción C — desde un disco montado (recuperación):**
-```bash
-sudo mount -o subvol=@home /dev/sdXN /mnt/pop4
-cp /mnt/pop4/TU_USER/.gnupg/private-keys-v1.d/*.key ~/.gnupg/private-keys-v1.d/
-cp /mnt/pop4/TU_USER/.gnupg/pubring.kbx ~/.gnupg/pubring.kbx
-cp /mnt/pop4/TU_USER/.gnupg/trustdb.gpg ~/.gnupg/trustdb.gpg
-gpg --list-secret-keys  # verificar
-```
-
-### 4. Descifrar los secretos
-
-```bash
-yadm decrypt
-```
-
-Esto restaura: `.ssh/id_ed25519`, `.ssh/id_rsa`, `.config/rclone/rclone.conf`, `.config/cf-ddns.env`.
-
-### 5. Verificar
-
-```bash
-rclone lsd alma:          # Google Drive debe listar carpetas
-ssh viking                # acceso a viking vía Tailscale
-```
-
----
-
-## Gestión de la llave GPG
-
-### Exportar la llave (hacer esto **ahora** y en cada rotación)
-
-```bash
-gpg --export-secret-keys --armor A28F843C63852BF6 > /tmp/gpg-fsardi8.asc
-```
-
-### Dónde guardarla
-
-| Opción | Recomendación | Por qué |
-|--------|--------------|---------|
-| **Bitwarden** (secure note) | ✅ **Mejor opción** | Cifrado E2E, accesible desde cualquier dispositivo, protegido por master password + 2FA |
-| **Imprimir en papel** | ✅ Backup adicional | No hackeable remotamente; guardar en lugar físico seguro |
-| **GitHub (repo privado)** | ❌ Nunca | Un repo privado puede quedar expuesto; la llave privada nunca debe estar en git |
-| **Disco sin cifrar** | ❌ Evitar | Si pierdes el disco, pierdes el control |
-
-### Procedimiento recomendado
-
-```bash
-# 1. Exportar con passphrase fuerte (ya la tiene si fue creada con passphrase)
-gpg --export-secret-keys --armor A28F843C63852BF6
-
-# 2. Copiar el bloque completo (-----BEGIN PGP PRIVATE KEY BLOCK----- ... -----END-----)
-#    y pegarlo en Bitwarden > New Secure Note > "GPG private key - fsardi8"
-
-# 3. Borrar el archivo temporal si lo usaste
-rm -f /tmp/gpg-fsardi8.asc
-```
-
-> **Nota:** La llave ya está protegida con su propia passphrase — aunque alguien
-> la robe de Bitwarden, no puede usarla sin esa passphrase.
-
----
-
-## Agregar un nuevo secreto al repo
-
-```bash
-# 1. Agregar el path al archivo de encrypt
-echo ".config/nuevo-secreto.conf" >> ~/.config/yadm/encrypt
-
-# 2. Re-cifrar y commitear
-yadm encrypt
-dot add ~/.local/share/yadm/archive ~/.config/yadm/encrypt
-dot com "add nuevo-secreto to encrypted files"
-dot push
-```
+| Editor | `.config/micro/settings.json` |
+| **Secretos (cifrados GPG)** | `.ssh/id_ed25519`, `.ssh/id_rsa`, `.config/rclone/rclone.conf`, `.config/cf-ddns.env` |
+| **No rastreados** | gtk.css, qt5ct, qt6ct, user-dirs (machine-specific) |
 
 ---
 
 ## Info
 
-- **GPG key ID:** `A28F843C63852BF6`
-- **GPG UID:** Felipe Sardi `<f@redsi.co>`
 - **yadm remote:** `git@github.com:fsardi8/dotfiles.git`
-- **Remoto rclone:** `alma` → Google Drive
+- **Remoto rclone:** `alma` → Google Drive (Hotel Alma)
+- **GPG key ID:** `A28F843C63852BF6`

@@ -6,23 +6,26 @@ usage() {
 dot — thin wrapper around yadm
 
 Usage:
-  dot                 # show this help
-  dot st              # yadm status
-  dot ls              # list tracked files
-  dot diff            # yadm diff (local vs last commit)
-  dot review          # diff local files vs origin (GitHub)
-  dot add FILE...     # stage specific files
-  dot skip FILE...    # ignore local changes (this machine only)
-  dot unskip FILE...  # resume tracking changes
-  dot com MESSAGE...  # commit with message
-  dot amend           # amend last commit
-  dot pull            # pull from origin
-  dot push            # push to origin
-  dot sync [MESSAGE]  # add -u, commit, push
+  dot                       # show this help
+  dot st                    # yadm status
+  dot ls                    # list tracked files
+  dot diff                  # yadm diff (local vs last commit)
+  dot review                # diff local files vs origin (GitHub)
+  dot add FILE...           # stage specific files
+  dot encrypt FILE...       # add FILE to encrypted secrets + re-cifrar
+  dot skip FILE...          # ignore local changes (this machine only)
+  dot unskip FILE...        # resume tracking changes
+  dot com MESSAGE...        # commit with message
+  dot amend                 # amend last commit
+  dot pull                  # pull from origin
+  dot push                  # push to origin
+  dot sync [MESSAGE]        # add -u, commit, push
 
 Notes:
-- dot sync stages only tracked files (safe)
-- secrets must remain untracked
+- dot sync  stages only already-tracked files (safe, won't add new ones)
+- dot add   stages a new file for tracking (public, goes into git)
+- dot encrypt  adds a secret to the GPG-encrypted archive (never in git plain)
+- secrets must remain untracked or in encrypt
 EOF
 }
 
@@ -59,6 +62,29 @@ case "$cmd" in
   add)
     [[ $# -gt 0 ]] || { echo "dot add: missing file(s)"; exit 2; }
     yadm add "$@"
+    ;;
+
+  encrypt)
+    [[ $# -gt 0 ]] || { echo "dot encrypt: missing file(s)"; exit 2; }
+    encrypt_file="$HOME/.config/yadm/encrypt"
+    changed=0
+    for f in "$@"; do
+      # normalizar a path relativo desde $HOME (sin ~/ ni /home/user/)
+      rel="${f/#$HOME\//}"
+      rel="${rel/#\~\//}"
+      if grep -qxF "$rel" "$encrypt_file" 2>/dev/null; then
+        echo "Ya en encrypt: $rel"
+      else
+        echo "$rel" >> "$encrypt_file"
+        echo "Agregado a encrypt: $rel"
+        changed=1
+      fi
+    done
+    echo "Cifrando..."
+    yadm encrypt
+    yadm add "$encrypt_file" "$HOME/.local/share/yadm/archive"
+    echo ""
+    echo "Listo. Commitea con:  dot com \"encrypt: descripcion\""
     ;;
 
   skip)
