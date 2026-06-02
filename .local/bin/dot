@@ -9,6 +9,7 @@ Usage:
   dot                       # show this help
   dot st                    # yadm status
   dot ls                    # list tracked files
+  dot lse                   # list encrypted secrets
   dot diff                  # yadm diff (local vs last commit)
   dot review                # diff local files vs origin (GitHub)
   dot add FILE...           # stage specific files
@@ -58,6 +59,11 @@ case "$cmd" in
 
   ls)
     yadm ls-files
+    ;;
+
+  lse)
+    echo "Encrypted secrets:"
+    grep -v '^\s*$' "$HOME/.config/yadm/encrypt" | sed 's/^/  /'
     ;;
 
   diff)
