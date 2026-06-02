@@ -26,6 +26,21 @@ Notes:
 - dot add   stages a new file for tracking (public, goes into git)
 - dot encrypt  adds a secret to the GPG-encrypted archive (never in git plain)
 - secrets must remain untracked or in encrypt
+
+Workflows:
+  New public file (first time):
+    dot add ~/.bashrc && dot com "add bashrc" && dot push
+
+  Edited a tracked file (day-to-day):
+    dot sync                        # add + commit + push in one shot
+
+  New secret file (first time):
+    dot encrypt ~/.ssh/id_ed25519 && dot com "encrypt: id_ed25519" && dot push
+
+  Secret file changed (e.g. rclone.conf updated):
+    dot encrypt ~/.config/rclone/rclone.conf && dot com "encrypt: update rclone" && dot push
+
+  Passphrase prompts on encrypt: normal — GPG re-encrypts the archive each time.
 EOF
 }
 
