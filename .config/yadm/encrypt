@@ -2,4 +2,4 @@
 .config/rclone/rclone.conf
 .ssh/id_ed25519
 .ssh/id_rsa
-oracle-micro
+.ssh/oracle-micro
