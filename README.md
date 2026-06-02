@@ -46,26 +46,35 @@ El script la pide interactivamente — nunca viaja por la red.
 
 ## Comandos `dot`
 
-### Día a día
+### Flujo normal — siempre termina en `dot sync`
 
 ```bash
-dot sync                      # commitea todo lo ya-rastreado + push
-dot sync "mensaje descriptivo" # ídem con tu mensaje
-dot st                        # ver qué cambió
-dot diff                      # ver los cambios en detalle
-dot review                    # comparar local vs GitHub
+# Editaste un archivo ya rastreado (lo más común):
+dot sync "mensaje"
+
+# Agregás un archivo público nuevo:
+dot add ~/.config/micro/settings.json
+dot sync "add micro config"
+
+# Agregás un secreto nuevo:
+dot encrypt ~/.config/nuevo-servicio.env
+dot sync "encrypt: nuevo-servicio"
+
+# Un secreto existente cambió (ej. rclone.conf con nuevos tokens):
+dot encrypt ~/.config/rclone/rclone.conf
+dot sync "encrypt: update rclone"
 ```
 
-### Agregar archivos
+> `dot sync` siempre es el último paso. Hace `add -u` + `commit` + `push` en uno.  
+> `dot add` y `dot encrypt` preparan el stage — después `dot sync` lo sube todo.
+
+### Inspección
 
 ```bash
-# Archivo normal (va a git, visible en GitHub):
-dot add ~/.config/micro/settings.json
-dot com "add micro config"
-
-# Archivo secreto (va cifrado con GPG, nunca en git en texto plano):
-dot encrypt ~/.config/nuevo-servicio.env
-dot com "encrypt: nuevo-servicio"
+dot st                   # ver qué cambió
+dot diff                 # ver los cambios en detalle
+dot review               # comparar local vs GitHub
+dot ls                   # listar todos los archivos rastreados
 ```
 
 ### Sincronización con GitHub
@@ -73,43 +82,14 @@ dot com "encrypt: nuevo-servicio"
 | Comando | Qué hace |
 |---------|----------|
 | `dot pull` | GitHub → local. Úsalo al llegar a una PC desactualizada |
-| `dot push` | local → GitHub. Solo sube commits ya hechos |
 | `dot sync` | `add -u` + `commit` + `push` todo en uno |
-
-> `dot sync` solo commitea archivos **ya rastreados**. Para archivos nuevos: `dot add` primero.
-
-### Corregir el último commit
-
-```bash
-dot add ~/.archivo-olvidado    # agregar lo que faltó
-dot amend                      # corrige el commit (abre editor para el mensaje)
-yadm push --force-with-lease   # si ya habías hecho push, necesitas force
-```
-
-> `amend` solo funciona con el **último** commit y antes de que otros lo usen.
 
 ### Otros
 
 ```bash
-dot ls                   # listar todos los archivos rastreados
 dot skip ~/.bashrc       # ignorar cambios locales (solo en esta máquina)
 dot unskip ~/.bashrc     # reanudar el tracking
 ```
-
----
-
-## Cómo agregar un secreto nuevo
-
-```bash
-# 1. El archivo ya existe en disco
-dot encrypt ~/.config/nuevo.env
-
-# 2. Commitear
-dot com "encrypt: agrego nuevo.env"
-dot push
-```
-
-`dot encrypt` hace todo: agrega el path a `.config/yadm/encrypt`, re-cifra el archive y prepara el stage. Solo falta el commit.
 
 ---
 
