@@ -53,6 +53,7 @@ alias mntl='mount | column -t'
 alias du='du -ch'
 alias dud='du -d 1 -h | sort -h'              # sorted dir sizes
 alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
+alias btrl='sudo btrfs subvol list'
 
 # ─────────────────────────────────────────────────────────────
 # Navigation
@@ -83,6 +84,7 @@ alias p5='ssh f@10.88.88.9'
 alias od='ssh f@10.85.85.8'
 alias ofa='ssh f@10.80.1.8'
 alias ofr='ssh f@10.48.48.88'
+alias or='ssh -i oracle-micro ubuntu@193.122.224.162'
 alias g2='ssh f@10.85.85.1'
 alias vr='ssh f@10.48.48.1'
 alias vb='ssh f@10.47.48.0'
