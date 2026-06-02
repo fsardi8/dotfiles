@@ -74,7 +74,8 @@ dot sync "encrypt: update rclone"
 dot st                   # ver qué cambió
 dot diff                 # ver los cambios en detalle
 dot review               # comparar local vs GitHub
-dot ls                   # listar todos los archivos rastreados
+dot ls                   # listar archivos rastreados (públicos)
+dot lse                  # listar secretos cifrados (encrypt list)
 ```
 
 ### Sincronización con GitHub
