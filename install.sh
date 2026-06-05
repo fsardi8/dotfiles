@@ -67,6 +67,7 @@ clone_dotfiles() {
 
 # ── importar llave GPG ─────────────────────────────────────────────────────────
 import_gpg_key() {
+  export GPG_TTY=$(tty)
   if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
     ok "Llave GPG $GPG_KEY_ID ya está importada"
     return
@@ -95,6 +96,7 @@ import_gpg_key() {
 # ── descifrar secretos ─────────────────────────────────────────────────────────
 decrypt_secrets() {
   info "Descifrando secretos (rclone.conf, SSH keys, cf-ddns.env)..."
+  export GPG_TTY=$(tty)
   yadm decrypt
   chmod 600 ~/.ssh/id_ed25519 ~/.ssh/id_rsa 2>/dev/null || true
   ok "Secretos descifrados"
