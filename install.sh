@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# fsardi8/dotfiles — bootstrap
-# Uso: bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/install.sh)
+# fsardi8/dotfiles — bootstrap (runs ON the new machine)
+#
+# PREFERRED:  dot bootstrap user@newhost   (from your main machine — no token needed)
+# FALLBACK:   if you're already on the new machine with SSH key copied:
+#               bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/install.sh)
 set -euo pipefail
 
 DOTFILES_REPO="https://github.com/fsardi8/dotfiles.git"
@@ -51,15 +54,21 @@ install_deps() {
   ok "Dependencias listas"
 }
 
-# ── clonar repo (HTTPS, sin SSH key todavía) ───────────────────────────────────
+# ── clonar repo ───────────────────────────────────────────────────────────────
 clone_dotfiles() {
-  if yadm status &>/dev/null; then
+  if yadm status &>/dev/null 2>&1; then
     warn "yadm ya está inicializado — saltando clone"
     return
   fi
-  info "Clonando dotfiles vía HTTPS..."
-  # --no-bootstrap evita ejecutar scripts antes de tener los secretos
-  yadm clone --no-bootstrap "$DOTFILES_REPO" || true
+  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+  if [[ -f ~/.ssh/id_ed25519 ]]; then
+    info "Clonando dotfiles vía SSH (id_ed25519 presente)..."
+    yadm clone --no-bootstrap "$DOTFILES_REPO_SSH"
+  else
+    die "No SSH key found at ~/.ssh/id_ed25519.
+  → On your MAIN machine run:  dot bootstrap $(whoami)@$(hostname -I | awk '{print $1}')
+  → Or manually copy:  scp mainhost:~/.ssh/id_ed25519 ~/.ssh/ && chmod 600 ~/.ssh/id_ed25519"
+  fi
   ok "Repo clonado"
 }
 

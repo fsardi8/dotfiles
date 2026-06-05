@@ -21,12 +21,17 @@ Usage:
   dot pull                  # pull from origin
   dot push                  # push to origin
   dot sync [MESSAGE]        # add -u, commit, push
+  dot bootstrap <user@host> # bootstrap dotfiles on a new machine
 
 Notes:
 - dot sync  stages only already-tracked files (safe, won't add new ones)
 - dot add   stages a new file for tracking (public, goes into git)
 - dot encrypt  adds a secret to the GPG-encrypted archive (never in git plain)
 - secrets must remain untracked or in encrypt
+
+New machine workflow:
+  1. ssh-copy-id -i ~/.ssh/id_ed25519.pub user@newhost   # one-time with password
+  2. dot bootstrap user@newhost                           # copies key + clones + GPG prompt
 
 Workflows:
   New public file (first time):
@@ -144,6 +149,83 @@ case "$cmd" in
       yadm commit -m "$msg"
       yadm push
     fi
+    ;;
+
+  bootstrap)
+    [[ $# -gt 0 ]] || { echo "dot bootstrap: missing user@host"; exit 2; }
+    target="$1"
+    SSH_KEY="$HOME/.ssh/id_ed25519"
+    DOTFILES_REPO="git@github.com:fsardi8/dotfiles.git"
+
+    echo "→  Bootstrapping $target"
+
+    # 1. Copy SSH private key so the new machine can auth to GitHub
+    echo "→  Copying SSH key..."
+    ssh "$target" "install -d -m 700 ~/.ssh"
+    scp -q "$SSH_KEY" "$SSH_KEY.pub" "$target:~/.ssh/"
+    ssh "$target" "chmod 600 ~/.ssh/id_ed25519"
+    echo "✔  SSH key copied"
+
+    # 2. Install yadm
+    echo "→  Installing yadm..."
+    ssh "$target" "
+      if ! command -v yadm &>/dev/null; then
+        if command -v apt-get &>/dev/null; then
+          sudo apt-get update -q && sudo apt-get install -y -q yadm
+        elif command -v pacman &>/dev/null; then
+          sudo pacman -S --noconfirm --needed yadm
+        else
+          echo 'ERROR: unsupported package manager'; exit 1
+        fi
+      fi
+    "
+    echo "✔  yadm ready"
+
+    # 3. Clone dotfiles (no-bootstrap so we can decrypt first)
+    echo "→  Cloning dotfiles..."
+    ssh "$target" "
+      if ! yadm status &>/dev/null 2>&1; then
+        ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+        yadm clone --no-bootstrap '$DOTFILES_REPO'
+      else
+        echo 'yadm already initialized, skipping clone'
+      fi
+    "
+    echo "✔  Dotfiles cloned"
+
+    # 4. NOPASSWD sudo — makes the rest of setup scriptable
+    echo "→  Configuring NOPASSWD sudo..."
+    REMOTE_USER=$(ssh "$target" "whoami")
+    ssh "$target" "echo '${REMOTE_USER} ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/90-nopasswd > /dev/null && sudo chmod 440 /etc/sudoers.d/90-nopasswd"
+    echo "✔  NOPASSWD sudo configured for ${REMOTE_USER}"
+
+    # 5. Decrypt secrets (GPG — interactive, user must paste key from Bitwarden)
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  GPG key needed to decrypt secrets (SSH keys, rclone, etc.)"
+    echo "  Open Bitwarden → 'GPG private key - fsardi8'"
+    echo "  Copy the full block (BEGIN/END lines included)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    ssh -t "$target" "
+      set -e
+      tmpf=\$(mktemp)
+      echo 'Paste GPG key then press Ctrl+D:'
+      cat > \"\$tmpf\"
+      gpg --import \"\$tmpf\"
+      rm -f \"\$tmpf\"
+      GPG_KEY_ID=A28F843C63852BF6
+      echo \"\${GPG_KEY_ID}:6:\" | gpg --import-ownertrust
+      yadm decrypt
+      chmod 600 ~/.ssh/id_ed25519 ~/.ssh/id_rsa 2>/dev/null || true
+    "
+    echo "✔  Secrets decrypted"
+
+    # 6. Run yadm bootstrap
+    echo "→  Running yadm bootstrap..."
+    ssh -t "$target" "yadm bootstrap"
+    echo ""
+    echo "✔  $target is ready. SSH in with: ssh $target"
     ;;
 
   *)
