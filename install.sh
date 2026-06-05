@@ -44,7 +44,7 @@ install_deps() {
   command -v git   &>/dev/null || pkgs+=(git)
   command -v yadm  &>/dev/null || pkgs+=(yadm)
   command -v rclone &>/dev/null || pkgs+=(rclone)
-  command -v gpg   &>/dev/null || pkgs+=( "$( [[ $pm == apt ]] && echo gnupg || echo gnupg )" )
+  command -v gpg   &>/dev/null || pkgs+=(gnupg)
 
   if [[ ${#pkgs[@]} -gt 0 ]]; then
     info "Instalando: ${pkgs[*]}"

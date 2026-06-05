@@ -171,15 +171,19 @@ case "$cmd" in
     ssh -t "$target" "
       if command -v apt-get &>/dev/null; then
         missing=()
-        command -v yadm &>/dev/null || missing+=(yadm)
-        command -v gpg  &>/dev/null || missing+=(gnupg)
+        command -v yadm   &>/dev/null || missing+=(yadm)
+        command -v gpg    &>/dev/null || missing+=(gnupg)
+        command -v rclone &>/dev/null || missing+=(rclone)
+        command -v git    &>/dev/null || missing+=(git)
         if [[ \${#missing[@]} -gt 0 ]]; then
           sudo apt-get update -q && sudo apt-get install -y -q \"\${missing[@]}\"
         fi
       elif command -v pacman &>/dev/null; then
         missing=()
-        command -v yadm &>/dev/null || missing+=(yadm)
-        command -v gpg  &>/dev/null || missing+=(gnupg)
+        command -v yadm   &>/dev/null || missing+=(yadm)
+        command -v gpg    &>/dev/null || missing+=(gnupg)
+        command -v rclone &>/dev/null || missing+=(rclone)
+        command -v git    &>/dev/null || missing+=(git)
         [[ \${#missing[@]} -gt 0 ]] && sudo pacman -S --noconfirm --needed \"\${missing[@]}\"
       else
         echo 'ERROR: unsupported package manager'; exit 1

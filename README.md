@@ -6,12 +6,34 @@ Dotfiles personales gestionados con [yadm](https://yadm.io) y el wrapper `dot`.
 
 ## Instalación en una PC nueva
 
+### Método preferido — desde tu máquina principal (repo privado, sin token)
+
+```bash
+# 1. Copiar tu SSH key a la nueva máquina (pide password una sola vez)
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@newhost
+
+# 2. Bootstrap completo desde aquí
+dot bootstrap user@newhost
+```
+
+`dot bootstrap` hace todo automáticamente:
+- Copia `id_ed25519` → nueva máquina puede autenticarse con GitHub
+- Instala `yadm` y `gnupg`
+- Clona el repo vía SSH
+- Configura sudo sin contraseña (`/etc/sudoers.d/90-nopasswd`)
+- Pide la llave GPG de Bitwarden → descifra secretos (SSH keys, rclone, cf-ddns)
+- Ejecuta el bootstrap de yadm (servicios systemd, etc.)
+
+Necesitas la **llave GPG privada** en Bitwarden (`GPG private key - fsardi8`).
+La pegas interactivamente — nunca viaja por la red.
+
+### Método alternativo — directamente en la nueva máquina (SSH key ya copiada)
+
+Si ya copiaste `id_ed25519` manualmente a `~/.ssh/`:
+
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/fsardi8/dotfiles/master/install.sh)
 ```
-
-Necesitas la **llave GPG privada** en Bitwarden (`GPG private key - fsardi8`).
-El script la pide interactivamente — nunca viaja por la red.
 
 ---
 
@@ -96,25 +118,29 @@ dot unskip ~/.bashrc     # reanudar el tracking
 
 ## Setup manual en una PC nueva (paso a paso)
 
-Si prefieres no usar `install.sh`:
+Si prefieres hacer los pasos a mano (la nueva máquina ya tiene `id_ed25519` copiada):
 
 ```bash
 # 1. Instalar dependencias
 sudo apt install yadm git rclone gnupg   # Debian/Ubuntu/Pop!_OS
 sudo pacman -S yadm git rclone gnupg    # Arch/CachyOS
 
-# 2. Clonar via HTTPS (sin SSH key todavía)
-yadm clone https://github.com/fsardi8/dotfiles.git
+# 2. Clonar via SSH
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+yadm clone --no-bootstrap git@github.com:fsardi8/dotfiles.git
 
 # 3. Importar llave GPG desde Bitwarden
 #    (copiar el bloque BEGIN/END PGP PRIVATE KEY del Secure Note)
 gpg --import   # pegar y Ctrl+D
+fpr=$(gpg --list-secret-keys --with-colons A28F843C63852BF6 | awk -F: '/^fpr/{print $10; exit}')
+echo "$fpr:6:" | gpg --import-ownertrust
 
 # 4. Descifrar secretos → restaura SSH keys, rclone.conf, cf-ddns.env
 yadm decrypt
+chmod 600 ~/.ssh/id_ed25519 ~/.ssh/id_rsa
 
-# 5. Cambiar remote a SSH (ya tienes la key)
-yadm remote set-url origin git@github.com:fsardi8/dotfiles.git
+# 5. Ejecutar bootstrap (servicios systemd, etc.)
+yadm bootstrap
 
 # 6. Verificar
 rclone lsd alma:          # Google Drive debe listar carpetas
