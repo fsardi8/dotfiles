@@ -60,15 +60,8 @@ clone_dotfiles() {
     warn "yadm ya está inicializado — saltando clone"
     return
   fi
-  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-  if [[ -f ~/.ssh/id_ed25519 ]]; then
-    info "Clonando dotfiles vía SSH (id_ed25519 presente)..."
-    yadm clone --no-bootstrap "$DOTFILES_REPO_SSH"
-  else
-    die "No SSH key found at ~/.ssh/id_ed25519.
-  → On your MAIN machine run:  dot bootstrap $(whoami)@$(hostname -I | awk '{print $1}')
-  → Or manually copy:  scp mainhost:~/.ssh/id_ed25519 ~/.ssh/ && chmod 600 ~/.ssh/id_ed25519"
-  fi
+  info "Clonando dotfiles vía HTTPS..."
+  yadm clone --no-bootstrap "$DOTFILES_REPO"
   ok "Repo clonado"
 }
 
