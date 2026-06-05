@@ -169,14 +169,20 @@ case "$cmd" in
     # 2. Install yadm
     echo "→  Installing yadm..."
     ssh -t "$target" "
-      if ! command -v yadm &>/dev/null; then
-        if command -v apt-get &>/dev/null; then
-          sudo apt-get update -q && sudo apt-get install -y -q yadm
-        elif command -v pacman &>/dev/null; then
-          sudo pacman -S --noconfirm --needed yadm
-        else
-          echo 'ERROR: unsupported package manager'; exit 1
+      if command -v apt-get &>/dev/null; then
+        missing=()
+        command -v yadm &>/dev/null || missing+=(yadm)
+        command -v gpg  &>/dev/null || missing+=(gnupg)
+        if [[ \${#missing[@]} -gt 0 ]]; then
+          sudo apt-get update -q && sudo apt-get install -y -q \"\${missing[@]}\"
         fi
+      elif command -v pacman &>/dev/null; then
+        missing=()
+        command -v yadm &>/dev/null || missing+=(yadm)
+        command -v gpg  &>/dev/null || missing+=(gnupg)
+        [[ \${#missing[@]} -gt 0 ]] && sudo pacman -S --noconfirm --needed \"\${missing[@]}\"
+      else
+        echo 'ERROR: unsupported package manager'; exit 1
       fi
     "
     echo "✔  yadm ready"
