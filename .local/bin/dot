@@ -168,7 +168,7 @@ case "$cmd" in
 
     # 2. Install yadm
     echo "→  Installing yadm..."
-    ssh "$target" "
+    ssh -t "$target" "
       if ! command -v yadm &>/dev/null; then
         if command -v apt-get &>/dev/null; then
           sudo apt-get update -q && sudo apt-get install -y -q yadm
@@ -196,7 +196,7 @@ case "$cmd" in
     # 4. NOPASSWD sudo — makes the rest of setup scriptable
     echo "→  Configuring NOPASSWD sudo..."
     REMOTE_USER=$(ssh "$target" "whoami")
-    ssh "$target" "echo '${REMOTE_USER} ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/90-nopasswd > /dev/null && sudo chmod 440 /etc/sudoers.d/90-nopasswd"
+    ssh -t "$target" "echo '${REMOTE_USER} ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/90-nopasswd > /dev/null && sudo chmod 440 /etc/sudoers.d/90-nopasswd"
     echo "✔  NOPASSWD sudo configured for ${REMOTE_USER}"
 
     # 5. Decrypt secrets (GPG — interactive, user must paste key from Bitwarden)
