@@ -62,6 +62,7 @@ alias etc='cd /etc'
 alias mnt='cd /mnt'
 alias bak='cd /mnt/zen/backup/'
 alias media='cd /mnt/zen/media'
+alias red='cd /mnt/zen/redsi/RED'
 alias tik='cd /mnt/zen/redsi/mikrotik'
 alias zen='cd /mnt/zen'
 alias ..='cd ..'
@@ -84,12 +85,16 @@ alias p5='ssh f@10.88.88.9'
 alias od='ssh f@10.85.85.8'
 alias ofa='ssh f@10.80.1.8'
 alias ofr='ssh f@10.48.48.88'
-alias or='ssh -i oracle-micro ubuntu@193.122.224.162'
+alias or='ssh -i ~/.ssh/oracle-micro ubuntu@193.122.224.162'
+alias ora='ssh -i ~/.ssh/oracle-micro ubuntu@158.101.104.122'
+alias pv='ssh root@10.48.48.99'
 alias g2='ssh f@10.85.85.1'
+alias smb='ssh root@10.48.48.111'   # samba proxmox viking
+alias synct='ssh root@10.48.48.110'   # syncthing
 alias vr='ssh f@10.48.48.1'
 alias vb='ssh f@10.47.48.0'
 alias vk='ssh f@10.48.48.101'
-alias pv='ssh root@10.48.48.99'
+alias sshkey='ssh-copy-id -i ~/.ssh/id_ed25519.pub' # user@ipserver
 
 # ─────────────────────────────────────────────────────────────
 # Utilities
@@ -98,3 +103,4 @@ alias path='echo $PATH | tr ":" "\n"'    # readable PATH
 alias now='date +"%Y-%m-%d %H:%M:%S"'   # current timestamp
 alias week='date +%V'                    # ISO week number
 alias extract='tar -xvf'                 # auto-detect archive
+alias md='glow'							# md reader

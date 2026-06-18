@@ -22,3 +22,5 @@ node_modules/
 .cache/
 dist/
 build/
+
+**/.claude/settings.local.json
