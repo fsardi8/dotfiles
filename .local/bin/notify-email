@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Usage: notify-email "Subject" "Body"
+set -euo pipefail
+
+CREDS_FILE="$HOME/.gmail-notify-creds"
+if [[ ! -f "$CREDS_FILE" ]]; then
+  echo "Error: credentials file not found at $CREDS_FILE" >&2
+  exit 1
+fi
+
+source "$CREDS_FILE"
+
+SUBJECT="${1:-Notification}"
+BODY="${2:-}"
+TO="${3:-$GMAIL_USER}"
+DATE="$(date -R)"
+
+curl --silent --show-error \
+  --ssl-reqd \
+  --url "smtps://smtp.gmail.com:465" \
+  --user "$GMAIL_USER:$GMAIL_APP_PASSWORD" \
+  --mail-from "$GMAIL_USER" \
+  --mail-rcpt "$TO" \
+  --upload-file - <<EOF
+From: $GMAIL_USER
+To: $TO
+Subject: $SUBJECT
+Date: $DATE
+Content-Type: text/plain; charset=utf-8
+
+$BODY
+EOF
+
+echo "Email sent: $SUBJECT"

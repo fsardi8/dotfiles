@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HOST="root@10.48.48.99"
+DEVICE="/dev/sda"
+SERIAL="WCJ9WVZ4"
+LOG="/home/f/.local/log/smart-sda.log"
+NOTIFY="/home/f/.local/bin/notify-email"
+
+mkdir -p "$(dirname "$LOG")"
+echo "[$(date)] Checking SMART results on $HOST $DEVICE" | tee -a "$LOG"
+
+SMART_OUTPUT=$(ssh -o ConnectTimeout=30 "$HOST" "smartctl -a $DEVICE")
+echo "$SMART_OUTPUT" >> "$LOG"
+
+# Parse key values
+HEALTH=$(echo "$SMART_OUTPUT" | grep -i "overall-health" | awk -F': ' '{print $2}')
+REALLOCATED=$(echo "$SMART_OUTPUT" | grep -i "Reallocated_Sector_Ct" | awk '{print $NF}')
+PENDING=$(echo "$SMART_OUTPUT" | grep -i "Current_Pending_Sector" | awk '{print $NF}')
+UNCORRECTABLE=$(echo "$SMART_OUTPUT" | grep -i "Offline_Uncorrectable" | awk '{print $NF}')
+TEMP=$(echo "$SMART_OUTPUT" | grep -i "Temperature_Celsius" | awk '{print $10}')
+TEST_RESULT=$(echo "$SMART_OUTPUT" | grep -A1 "# 1" | head -2)
+ERRORS_LOGGED=$(echo "$SMART_OUTPUT" | grep -i "No Errors Logged" | wc -l)
+
+# Determine overall status
+STATUS="PASSED"
+ISSUES=""
+
+if [[ "$HEALTH" != "PASSED" ]]; then
+  STATUS="FAILED"
+  ISSUES+="- Overall health: $HEALTH\n"
+fi
+if [[ "$REALLOCATED" != "0" ]]; then
+  STATUS="FAILED"
+  ISSUES+="- Reallocated sectors: $REALLOCATED\n"
+fi
+if [[ "$PENDING" != "0" ]]; then
+  STATUS="WARNING"
+  ISSUES+="- Pending sectors: $PENDING\n"
+fi
+if [[ "$UNCORRECTABLE" != "0" ]]; then
+  STATUS="FAILED"
+  ISSUES+="- Offline uncorrectable: $UNCORRECTABLE\n"
+fi
+if echo "$TEST_RESULT" | grep -qi "failure\|fail"; then
+  STATUS="FAILED"
+  ISSUES+="- Self-test result: $(echo "$TEST_RESULT" | head -1)\n"
+fi
+if [[ "$ERRORS_LOGGED" -eq 0 ]]; then
+  ISSUES+="- SMART error log has entries (check log for details)\n"
+fi
+
+BODY="SMART Extended Self-Test Results
+================================
+Drive:        ST5000LM000-2U8170 (Seagate Barracuda 2.5\")
+Serial:       $SERIAL
+Device:       $HOST $DEVICE
+Checked:      $(date)
+
+Overall Health:       $HEALTH
+Reallocated Sectors:  $REALLOCATED
+Pending Sectors:      $PENDING
+Offline Uncorrectable: $UNCORRECTABLE
+Temperature:          ${TEMP}°C
+
+Latest Self-Test:
+$TEST_RESULT"
+
+if [[ -n "$ISSUES" ]]; then
+  BODY+="\n\nISSUES DETECTED:\n$(echo -e "$ISSUES")"
+  BODY+="\nRecommended action: consider running a warranty claim at seagate.com/support/warranty-and-replacements/ (serial: $SERIAL)"
+else
+  BODY+="\n\nNo issues detected. Drive is healthy."
+fi
+
+BODY+="\n\nFull log: $LOG"
+
+echo "[$(date)] Sending notification email (status: $STATUS)" | tee -a "$LOG"
+"$NOTIFY" "SMART Test Results [$STATUS]: /dev/sda ($SERIAL)" "$BODY"
+echo "[$(date)] Done." | tee -a "$LOG"

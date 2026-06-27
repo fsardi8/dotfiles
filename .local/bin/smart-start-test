@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HOST="root@10.48.48.99"
+DEVICE="/dev/sda"
+LOG="/home/f/.local/log/smart-sda.log"
+
+mkdir -p "$(dirname "$LOG")"
+echo "[$(date)] Starting SMART extended self-test on $HOST $DEVICE" | tee -a "$LOG"
+
+ssh -o ConnectTimeout=30 "$HOST" "smartctl -t long $DEVICE" | tee -a "$LOG"
+
+echo "[$(date)] Extended self-test queued. Results check scheduled in ~14 hours." | tee -a "$LOG"
