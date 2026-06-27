@@ -450,7 +450,8 @@
       "Bash(echo \"umount p1 exit: $?\")",
       "Bash(echo \"=== exit: $? ===\")",
       "Bash(echo \"remount p1: $?\")",
-      "Bash(awk '{print $2}')"
+      "Bash(awk '{print $2}')",
+      "Bash(git *)"
     ]
   }
 }

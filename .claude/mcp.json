@@ -6,7 +6,7 @@
       "args": [],
       "env": {
         "ROUTEROS_LOG_LEVEL": "INFO",
-        "ROUTEROS_DEVICES_CONFIG": "/mnt/zen/redsi/mikrotik/devices.yaml"
+        "ROUTEROS_DEVICES_CONFIG": "/mnt/zen/redsi/mikrotik/inventory.yaml"
       }
     }
   }

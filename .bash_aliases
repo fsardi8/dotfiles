@@ -1,9 +1,10 @@
 # ───────────────2026-apr-27-12:23─────────────────────────────
-# Package Management
+#  Package Management
 # ─────────────────────────────────────────────────────────────
 alias ai='sudo apt install -y'
 alias ar='sudo apt purge -y'
 alias au='sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && flatpak update -y'  # update all
+alias uclaude='(cd /home/f/.local/share/claude-desktop && bash setup.sh)'
 alias flatup='flatpak update -y'
 alias flats='flatpak search'
 alias flati='flatpak install -y'
@@ -63,7 +64,7 @@ alias mnt='cd /mnt'
 alias bak='cd /mnt/zen/backup/'
 alias media='cd /mnt/zen/media'
 alias red='cd /mnt/zen/redsi/RED'
-alias tik='cd /mnt/zen/redsi/mikrotik'
+alias tik='cd ~/mikrotik'
 alias zen='cd /mnt/zen'
 alias ..='cd ..'
 alias ...='cd ../..'
@@ -104,3 +105,7 @@ alias now='date +"%Y-%m-%d %H:%M:%S"'   # current timestamp
 alias week='date +%V'                    # ISO week number
 alias extract='tar -xvf'                 # auto-detect archive
 alias md='glow'							# md reader
+
+alias cl='claude'
+alias clr='claude --resume'
+alias clc='claude --strict-mcp-config --mcp-config {"mcpServers":{}}'
