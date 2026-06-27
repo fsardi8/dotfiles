@@ -1,0 +1,2 @@
+#!/bin/bash
+exec claude --resume --strict-mcp-config --mcp-config /home/f/.claude/mcp-empty.json "$@"
