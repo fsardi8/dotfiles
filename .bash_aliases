@@ -57,6 +57,17 @@ alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
 alias btrl='sudo btrfs subvol list'
 
 # ─────────────────────────────────────────────────────────────
+# Modern CLI replacements
+# ─────────────────────────────────────────────────────────────
+alias fd='fdfind'                        # fd-find (Debian/Ubuntu names it fdfind)
+alias bat='batcat'                       # bat (Debian/Ubuntu names it batcat)
+alias ls='eza --icons'                   # eza replaces ls
+alias ll='eza -lah --icons --git'        # long + hidden + human sizes + git status
+alias lt='eza --tree --level=2 --icons'  # tree view, 2 levels deep
+alias la='eza -a --icons'               # all files including dotfiles
+export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # syntax-highlighted man pages
+
+# ─────────────────────────────────────────────────────────────
 # Navigation
 # ─────────────────────────────────────────────────────────────
 alias etc='cd /etc'
@@ -109,3 +120,8 @@ alias md='glow'							# md reader
 alias cl='claude'
 alias clr='claude --resume'
 alias clc='claude --strict-mcp-config --mcp-config {"mcpServers":{}}'
+
+# Claude Code aliases
+alias cl='claude'
+alias clc='claude --strict-mcp-config --mcp-config "{}"'
+alias clr='claude --resume'
