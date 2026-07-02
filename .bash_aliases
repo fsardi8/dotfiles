@@ -61,11 +61,14 @@ alias btrl='sudo btrfs subvol list'
 # ─────────────────────────────────────────────────────────────
 alias fd='fdfind'                        # fd-find (Debian/Ubuntu names it fdfind)
 alias bat='batcat'                       # bat (Debian/Ubuntu names it batcat)
+alias cat='batcat'                       # bat (Debian/Ubuntu names it batcat)
 alias ls='eza --icons'                   # eza replaces ls
+alias l='eza --icons'                   # eza replaces ls
 alias ll='eza -lah --icons --git'        # long + hidden + human sizes + git status
 alias lt='eza --tree --level=2 --icons'  # tree view, 2 levels deep
 alias la='eza -a --icons'               # all files including dotfiles
-export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # syntax-highlighted man pages
+export MANROFFOPT="-c"                                 # tell groff to use overstrike format instead of ANSI codes
+export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # col strips overstrikes, bat applies clean highlighting
 
 # ─────────────────────────────────────────────────────────────
 # Navigation
@@ -74,7 +77,7 @@ alias etc='cd /etc'
 alias mnt='cd /mnt'
 alias bak='cd /mnt/zen/backup/'
 alias media='cd /mnt/zen/media'
-alias red='cd /mnt/zen/redsi/RED'
+alias red='cd /mnt/zen/redsi/mikrotik/RED'
 alias tik='cd ~/mikrotik'
 alias zen='cd /mnt/zen'
 alias ..='cd ..'
@@ -117,11 +120,8 @@ alias week='date +%V'                    # ISO week number
 alias extract='tar -xvf'                 # auto-detect archive
 alias md='glow'							# md reader
 
-alias cl='claude'
-alias clr='claude --resume'
-alias clc='claude --strict-mcp-config --mcp-config {"mcpServers":{}}'
-
 # Claude Code aliases
-alias cl='claude'
-alias clc='claude --strict-mcp-config --mcp-config "{}"'
-alias clr='claude --resume'
+alias clm='claude'
+alias clmr='claude --resume'
+alias cl='claude --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'
+alias clr='claude --resume --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'

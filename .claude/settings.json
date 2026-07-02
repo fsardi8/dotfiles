@@ -9,8 +9,8 @@
     "type": "command",
     "command": "bash /home/f/.claude/statusline-command.sh"
   },
-  "effortLevel": "low",
+  "effortLevel": "medium",
   "theme": "dark-daltonized",
-  "agentPushNotifEnabled": true,
-  "remoteControlAtStartup": true
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true
 }
