@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
 # Package Management
 # ─────────────────────────────────────────────────────────────
 alias ai='sudo apt install -y'
@@ -20,7 +20,7 @@ alias bc='bc -l'
 alias h='history'
 alias j='jobs -l'
 alias py='python3'
-alias cls=clear
+alias c=clear
 
 # ─────────────────────────────────────────────────────────────
 # System Info
@@ -73,11 +73,13 @@ alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
 # ─────────────────────────────────────────────────────────────
 alias etc='cd /etc'
 alias mnt='cd /mnt'
-alias bak='cd /mnt/zen/backup/mikrotik'
-alias media='cd /mnt/zen/media'
-alias zen='cd /mnt/zen'
+alias bak='cd /mnt/mrt/backups'
+alias media='cd /mnt/mrt/media'
+alias tik='cd ~/mikrotik'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias bin='cd ~/.local/bin'
+alias func='cd ~/.config/bash/functions.d'
 
 # ─────────────────────────────────────────────────────────────
 # Network
