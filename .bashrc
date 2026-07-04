@@ -73,25 +73,15 @@ xterm*|rxvt*)
     ;;
 esac
 
-# enable color support of ls and also add handy aliases
+# enable color support of grep
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
 fi
 
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# some more ls aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
+# ls/ll/la/lt aliases are defined in ~/.bash_aliases (using eza)
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -102,9 +92,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
+# aliases y funciones cargadas vía rc.d/20-aliases.sh y rc.d/30-functions.sh
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -118,7 +106,7 @@ if ! shopt -oq posix; then
 fi
 
 # Custom PATH
-export PATH="$PATH:/mnt/zen/applications"
+[[ -d /mnt/zen/applications ]] && export PATH="$PATH:/mnt/zen/applications"
 export PATH="$HOME/.local/bin:$PATH"
 
 # Load modular bash config (interactive shells only)
@@ -128,8 +116,16 @@ for f in "$HOME/.config/bash/rc.d/"*.sh; do
 done
 unset f
 
-export PATH=/home/f/bin:$PATH
+[[ -d "$HOME/bin" ]] && export PATH="$HOME/bin:$PATH"
 
-[[ -e "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh" ]] && source "/home/f/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh"
+[[ -e "$HOME/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh" ]] && \
+  source "$HOME/lib/oracle-cli/lib/python3.12/site-packages/oci_cli/bin/oci_autocomplete.sh"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 . "$HOME/.local/bin/env"
+
+### zoxide — must be last so it hooks into cd after everything else loads
+eval "$(zoxide init bash)"

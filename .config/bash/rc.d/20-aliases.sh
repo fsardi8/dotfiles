@@ -1,2 +1,2 @@
-# Keep using the existing ~/.bash_aliases for now (we will later migrate it cleanly)
+# Aliases en ~/.bash_aliases; funciones en functions.d/ (ya migradas)
 [[ -r "$HOME/.bash_aliases" ]] && source "$HOME/.bash_aliases"

@@ -1,9 +1,10 @@
-# ────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # Package Management
 # ─────────────────────────────────────────────────────────────
 alias ai='sudo apt install -y'
 alias ar='sudo apt purge -y'
 alias au='sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && flatpak update -y'  # update all
+alias uclaude='(cd /home/f/.local/share/claude-desktop && bash setup.sh)'
 alias flatup='flatpak update -y'
 alias flats='flatpak search'
 alias flati='flatpak install -y'
@@ -30,15 +31,6 @@ alias cpuinfo='lscpu | grep -E "Model name|CPU\(s\)|Thread|Core"'
 alias temps='sensors 2>/dev/null || echo "install lm-sensors"'  # requires lm-sensors
 
 # ─────────────────────────────────────────────────────────────
-# User & Group Management
-# ─────────────────────────────────────────────────────────────
-agroup() { sudo usermod -aG "$1" "${2:-$USER}"; }
-
-# ─────────────────────────────────────────────────────────────
-# File Sync & Tmux
-# ─────────────────────────────────────────────────────────────
-
-# ─────────────────────────────────────────────────────────────
 # Editor & Config Shortcuts
 # ─────────────────────────────────────────────────────────────
 export EDITOR=micro
@@ -48,11 +40,6 @@ alias ealias='micro ~/.bash_aliases && source ~/.bash_aliases'
 alias efstab='sudo -e /etc/fstab'
 alias essh='sudo -e /etc/ssh/sshd_config && sudo systemctl restart ssh'
 alias enfs='micro /etc/exports && sudo exportfs -ra'
-esamba() {
-  sudo -e /etc/samba/smb.conf || return
-  sudo systemctl restart smbd 2>/dev/null || sudo systemctl restart samba 2>/dev/null
-  sudo systemctl restart nmbd 2>/dev/null || true
-}
 
 # ─────────────────────────────────────────────────────────────
 # Media Conversion
@@ -67,6 +54,21 @@ alias mntl='mount | column -t'
 alias du='du -ch'
 alias dud='du -d 1 -h | sort -h'              # sorted dir sizes
 alias biggest='du -ah . 2>/dev/null | sort -rh | head -20'  # top 20 largest
+alias btrl='sudo btrfs subvol list'
+
+# ─────────────────────────────────────────────────────────────
+# Modern CLI replacements
+# ─────────────────────────────────────────────────────────────
+alias fd='fdfind'                        # fd-find (Debian/Ubuntu names it fdfind)
+alias bat='batcat'                       # bat (Debian/Ubuntu names it batcat)
+alias cat='batcat'                       # bat (Debian/Ubuntu names it batcat)
+alias ls='eza --icons'                   # eza replaces ls
+alias l='eza --icons'                   # eza replaces ls
+alias ll='eza -lah --icons --git'        # long + hidden + human sizes + git status
+alias lt='eza --tree --level=2 --icons'  # tree view, 2 levels deep
+alias la='eza -a --icons'               # all files including dotfiles
+export MANROFFOPT="-c"                                 # tell groff to use overstrike format instead of ANSI codes
+export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # col strips overstrikes, bat applies clean highlighting
 
 # ─────────────────────────────────────────────────────────────
 # Navigation
@@ -82,65 +84,13 @@ alias bin='cd ~/.local/bin'
 alias func='cd ~/.config/bash/functions.d'
 
 # ─────────────────────────────────────────────────────────────
-# Network
+# Network  (funciones → ~/.config/bash/functions.d/network.sh)
 # ─────────────────────────────────────────────────────────────
 alias p='ping -i 0.2'
 alias t='traceroute'
 alias ports='ss -tulnp'       # listening ports
 alias syslog='journalctl -f'  # live system log
 alias bootlog='journalctl -b' # current boot log
-
-myip() { curl -4fsS --max-time 5 https://api.ipify.org && echo; }
-
-ipa() {
-  ip -br -c a
-  echo "public:       $(myip 2>/dev/null || echo "?")"
-}
-
-dns() {
-  command -v resolvectl >/dev/null && resolvectl status
-  if command -v nmcli >/dev/null; then
-    nmcli device show | grep -E 'IP4\.DNS|IP4\.ADDRESS|GENERAL\.DEVICE'
-  else
-    echo "nmcli not found; showing /etc/resolv.conf:"
-    sed -n '1,120p' /etc/resolv.conf
-  fi
-}
-
-ipscan() { sudo arp-scan --localnet; }   # Likely command is arp-scan on Ubuntu/Proxmox
-
-network() {
-  if command -v nmtui >/dev/null; then
-    sudo nmtui
-  else
-    echo "nmtui not installed (common on Proxmox)."
-    echo "Tip: edit netplan or /etc/network/interfaces depending on the host."
-  fi
-}
-
-ipuf() {
-  local env="$HOME/.config/cf-ddns.env"
-  [[ -r "$env" ]] || { echo "Missing $env (see comments in ~/.bash_aliases)"; return 1; }
-  source "$env"
-
-  : "${CF_ZONE_ID:?Missing CF_ZONE_ID}" "${CF_API_TOKEN:?Missing CF_API_TOKEN}" "${CF_RECORD_NAME:?Missing CF_RECORD_NAME}"
-  command -v jq >/dev/null || { echo "jq is required: sudo apt install -y jq"; return 1; }
-
-  local ip rid
-  ip="$(myip)" || return 1
-
-  rid="$(curl -fsS --max-time 10 \
-    -X GET "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?type=A&name=$CF_RECORD_NAME" \
-    -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
-    | jq -r '.result[0].id')" || return 1
-
-  [[ -n "$rid" && "$rid" != "null" ]] || { echo "DNS record not found for $CF_RECORD_NAME"; return 1; }
-
-  curl -fsS --max-time 10 \
-    -X PUT "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$rid" \
-    -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
-    --data "{\"type\":\"A\",\"name\":\"$CF_RECORD_NAME\",\"content\":\"$ip\",\"ttl\":120,\"proxied\":false}" | jq .
-}
 
 # ─────────────────────────────────────────────────────────────
 # SSH Shortcuts
@@ -150,9 +100,16 @@ alias p5='ssh f@10.88.88.9'
 alias od='ssh f@10.85.85.8'
 alias ofa='ssh f@10.80.1.8'
 alias ofr='ssh f@10.48.48.88'
+alias or='ssh -i ~/.ssh/oracle-micro ubuntu@193.122.224.162'
+alias ora='ssh -i ~/.ssh/oracle-micro ubuntu@158.101.104.122'
+alias pv='ssh root@10.48.48.99'
 alias g2='ssh f@10.85.85.1'
+alias smb='ssh root@10.48.48.111'   # samba proxmox viking
+alias synct='ssh root@10.48.48.110'   # syncthing
 alias vr='ssh f@10.48.48.1'
 alias vb='ssh f@10.47.48.0'
+alias vk='ssh f@10.48.48.101'
+alias sshkey='ssh-copy-id -i ~/.ssh/id_ed25519.pub' # user@ipserver
 
 # ─────────────────────────────────────────────────────────────
 # Utilities
@@ -161,3 +118,10 @@ alias path='echo $PATH | tr ":" "\n"'    # readable PATH
 alias now='date +"%Y-%m-%d %H:%M:%S"'   # current timestamp
 alias week='date +%V'                    # ISO week number
 alias extract='tar -xvf'                 # auto-detect archive
+alias md='glow'							# md reader
+
+# Claude Code aliases
+alias clm='claude'
+alias clmr='claude --resume'
+alias cl='claude --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'
+alias clr='claude --resume --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'

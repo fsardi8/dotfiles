@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "routeros": {
+      "type": "stdio",
+      "command": "/mnt/zen/redsi/mikrotik/mikrotik-mcp/.venv/bin/routeros-mcp",
+      "args": [],
+      "env": {
+        "ROUTEROS_LOG_LEVEL": "INFO",
+        "ROUTEROS_DEVICES_CONFIG": "/mnt/zen/redsi/mikrotik/inventory.yaml"
+      }
+    }
+  }
+}

@@ -1,1 +1,8 @@
-.config/cf-ddns.env
+.local/bin/claude
+
+# machine-specific — no trackear (tema, DPI, resolución, symlinks de color)
+.config/qt5ct/qt5ct.conf
+.config/qt6ct/qt6ct.conf
+.config/user-dirs.dirs
+.config/gtk-3.0/gtk.css
+.config/gtk-4.0/gtk.css
