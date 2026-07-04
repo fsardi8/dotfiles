@@ -1,5 +1,5 @@
-# ───────────────2026-apr-27-12:23─────────────────────────────
-#  Package Management
+# ─────────────────────────────────────────────────────────────
+# Package Management
 # ─────────────────────────────────────────────────────────────
 alias ai='sudo apt install -y'
 alias ar='sudo apt purge -y'
@@ -75,13 +75,13 @@ export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # col strips overstrikes, 
 # ─────────────────────────────────────────────────────────────
 alias etc='cd /etc'
 alias mnt='cd /mnt'
-alias bak='cd /mnt/zen/backup/'
-alias media='cd /mnt/zen/media'
-alias red='cd /mnt/zen/redsi/mikrotik/RED'
+alias bak='cd /mnt/mrt/backups'
+alias media='cd /mnt/mrt/media'
 alias tik='cd ~/mikrotik'
-alias zen='cd /mnt/zen'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias bin='cd ~/.local/bin'
+alias func='cd ~/.config/bash/functions.d'
 
 # ─────────────────────────────────────────────────────────────
 # Network  (funciones → ~/.config/bash/functions.d/network.sh)
