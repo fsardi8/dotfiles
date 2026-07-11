@@ -121,7 +121,8 @@ alias extract='tar -xvf'                 # auto-detect archive
 alias md='glow'							# md reader
 
 # Claude Code aliases
-alias clm='claude'
-alias clmr='claude --resume'
 alias cl='claude --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'
 alias clr='claude --resume --strict-mcp-config --mcp-config ~/.claude/mcp-empty.json'
+alias clm='claude --strict-mcp-config --mcp-config /home/f/mikrotik/.mcp.json'
+alias clmr='claude --resume --strict-mcp-config --mcp-config /home/f/mikrotik/.mcp.json'
+alias einv='~/mikrotik/.venv/bin/python3 ~/mikrotik/einv.py'
