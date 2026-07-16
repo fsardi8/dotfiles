@@ -68,8 +68,8 @@ alias btrl='sudo btrfs subvol list'
 # bat: binary is 'batcat' on Debian/Ubuntu, 'bat' on Arch
 _bat=$(command -v batcat 2>/dev/null || command -v bat 2>/dev/null || true)
 if [[ -n $_bat ]]; then
-  alias bat="$_bat"
-  alias cat="$_bat"
+  alias bat="$_bat --paging=auto"
+  alias cat="$_bat --paging=never"
   export MANROFFOPT="-c"
   export MANPAGER="sh -c 'col -bx | $_bat -l man -p'"
 fi
