@@ -73,6 +73,43 @@ install_deps() {
   ok "Dependencias listas"
 }
 
+# ── nerd fonts (necesarios para eza --icons) ───────────────────────────────────
+install_nerd_fonts() {
+  local font_dir="$HOME/.local/share/fonts"
+  local marker="$font_dir/NerdFontsSymbolsOnly"
+
+  if fc-list | grep -qi "Symbols Nerd Font"; then
+    ok "Nerd Font Symbols ya instalada"
+    return
+  fi
+
+  local pm; pm=$(detect_pkg_manager)
+
+  if [[ $pm == pacman ]]; then
+    info "Instalando ttf-nerd-fonts-symbols..."
+    sudo pacman -S --noconfirm --needed ttf-nerd-fonts-symbols
+    ok "Nerd Font Symbols instalada vía pacman"
+    return
+  fi
+
+  # Debian/Ubuntu: descargar desde GitHub releases
+  info "Descargando Symbols Nerd Font desde GitHub..."
+  local ver
+  ver=$(curl -fsSL https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest \
+        | grep '"tag_name"' | head -1 | sed 's/.*"v\([^"]*\)".*/\1/')
+  [[ -z $ver ]] && { warn "No se pudo obtener la versión de nerd-fonts — instálala manualmente"; return; }
+
+  local tmpdir; tmpdir=$(mktemp -d)
+  curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/download/v${ver}/NerdFontsSymbolsOnly.tar.xz" \
+    -o "$tmpdir/symbols.tar.xz"
+  mkdir -p "$font_dir"
+  tar -xf "$tmpdir/symbols.tar.xz" -C "$font_dir" --wildcards '*.ttf' 2>/dev/null || \
+    tar -xf "$tmpdir/symbols.tar.xz" -C "$font_dir"
+  rm -rf "$tmpdir"
+  fc-cache -f "$font_dir"
+  ok "Nerd Font Symbols instalada en $font_dir"
+}
+
 # ── clonar repo ───────────────────────────────────────────────────────────────
 clone_dotfiles() {
   if yadm status &>/dev/null 2>&1; then
@@ -168,6 +205,7 @@ main() {
   echo ""
 
   install_deps
+  install_nerd_fonts
   clone_dotfiles
   import_gpg_key
   decrypt_secrets
