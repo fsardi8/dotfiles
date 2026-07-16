@@ -122,8 +122,8 @@ Si prefieres hacer los pasos a mano (la nueva máquina ya tiene `id_ed25519` cop
 
 ```bash
 # 1. Instalar dependencias
-sudo apt install yadm git rclone gnupg   # Debian/Ubuntu/Pop!_OS
-sudo pacman -S yadm git rclone gnupg    # Arch/CachyOS
+sudo apt install yadm git rclone gnupg zoxide eza micro bat fd-find fzf jq   # Debian/Ubuntu/Pop!_OS
+sudo pacman -S yadm git rclone gnupg zoxide eza micro bat fd fzf jq          # Arch/CachyOS
 
 # 2. Clonar via SSH
 ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -190,6 +190,21 @@ gpg --export-secret-keys --armor A28F843C63852BF6
 | **Disco sin cifrar** | ❌ Evitar | Si pierdes el disco, pierdes el control |
 
 > La llave ya tiene su propia passphrase — aunque alguien la robe de Bitwarden, no puede usarla sin ella. Son dos capas de protección.
+
+---
+
+## Compatibilidad Debian / Arch
+
+Los dotfiles funcionan en ambas distros. Algunas notas:
+
+| Tool | Debian/Ubuntu | Arch/CachyOS |
+|------|--------------|--------------|
+| `bat` | paquete `bat`, binario `batcat` | paquete `bat`, binario `bat` |
+| `fd` | paquete `fd-find`, binario `fdfind` | paquete `fd`, binario `fd` |
+| SSH service | `systemctl restart ssh` | `systemctl restart sshd` |
+| Package mgr | `apt` | `pacman` |
+
+Los aliases `ai/ar/au`, `bat`, `cat`, `fd`, `essh` y `MANPAGER` se adaptan automáticamente al detectar el binario o gestor de paquetes disponible — no requieren configuración manual.
 
 ---
 
