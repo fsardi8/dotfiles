@@ -1,9 +1,15 @@
 # ─────────────────────────────────────────────────────────────
-# Package Management
+# Package Management  (apt on Debian/Ubuntu, pacman on Arch)
 # ─────────────────────────────────────────────────────────────
-alias ai='sudo apt install -y'
-alias ar='sudo apt purge -y'
-alias au='sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && flatpak update -y'  # update all
+if command -v apt &>/dev/null; then
+  alias ai='sudo apt install -y'
+  alias ar='sudo apt purge -y'
+  alias au='sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && flatpak update -y 2>/dev/null || true'
+elif command -v pacman &>/dev/null; then
+  alias ai='sudo pacman -S --noconfirm'
+  alias ar='sudo pacman -Rns'
+  alias au='sudo pacman -Syu && flatpak update -y 2>/dev/null || true'
+fi
 alias uclaude='(cd /home/f/.local/share/claude-desktop && bash setup.sh)'
 alias flatup='flatpak update -y'
 alias flats='flatpak search'
@@ -38,7 +44,7 @@ alias e='micro'
 alias se='sudo -e'
 alias ealias='micro ~/.bash_aliases && source ~/.bash_aliases'
 alias efstab='sudo -e /etc/fstab'
-alias essh='sudo -e /etc/ssh/sshd_config && sudo systemctl restart ssh'
+alias essh='sudo -e /etc/ssh/sshd_config && (sudo systemctl restart ssh 2>/dev/null || sudo systemctl restart sshd)'
 alias enfs='micro /etc/exports && sudo exportfs -ra'
 
 # ─────────────────────────────────────────────────────────────
@@ -59,16 +65,26 @@ alias btrl='sudo btrfs subvol list'
 # ─────────────────────────────────────────────────────────────
 # Modern CLI replacements
 # ─────────────────────────────────────────────────────────────
-alias fd='fdfind'                        # fd-find (Debian/Ubuntu names it fdfind)
-alias bat='batcat'                       # bat (Debian/Ubuntu names it batcat)
-alias cat='batcat'                       # bat (Debian/Ubuntu names it batcat)
+# bat: binary is 'batcat' on Debian/Ubuntu, 'bat' on Arch
+_bat=$(command -v batcat 2>/dev/null || command -v bat 2>/dev/null || true)
+if [[ -n $_bat ]]; then
+  alias bat="$_bat"
+  alias cat="$_bat"
+  export MANROFFOPT="-c"
+  export MANPAGER="sh -c 'col -bx | $_bat -l man -p'"
+fi
+unset _bat
+
+# fd: binary is 'fdfind' on Debian/Ubuntu, 'fd' on Arch
+_fd=$(command -v fdfind 2>/dev/null || command -v fd 2>/dev/null || true)
+[[ -n $_fd ]] && alias fd="$_fd"
+unset _fd
+
 alias ls='eza --icons'                   # eza replaces ls
-alias l='eza --icons'                   # eza replaces ls
+alias l='eza --icons'
 alias ll='eza -lah --icons --git'        # long + hidden + human sizes + git status
 alias lt='eza --tree --level=2 --icons'  # tree view, 2 levels deep
-alias la='eza -a --icons'               # all files including dotfiles
-export MANROFFOPT="-c"                                 # tell groff to use overstrike format instead of ANSI codes
-export MANPAGER="sh -c 'col -bx | batcat -l man -p'"  # col strips overstrikes, bat applies clean highlighting
+alias la='eza -a --icons'
 
 # ─────────────────────────────────────────────────────────────
 # Navigation

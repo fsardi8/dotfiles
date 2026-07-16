@@ -40,7 +40,7 @@ ipuf() {
   source "$env"
 
   : "${CF_ZONE_ID:?Missing CF_ZONE_ID}" "${CF_API_TOKEN:?Missing CF_API_TOKEN}" "${CF_RECORD_NAME:?Missing CF_RECORD_NAME}"
-  command -v jq >/dev/null || { echo "jq is required: sudo apt install -y jq"; return 1; }
+  command -v jq >/dev/null || { echo "jq is required (apt install -y jq  /  pacman -S jq)"; return 1; }
 
   local ip rid
   ip="$(myip)" || return 1
