@@ -81,7 +81,7 @@ if [ -x /usr/bin/dircolors ]; then
     alias egrep='egrep --color=auto'
 fi
 
-# ls/ll/la/lt aliases are defined in ~/.bash_aliases (using eza)
+# ls/ll/la/lt aliases are defined in ~/.config/shell/aliases.sh (using eza)
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -89,10 +89,10 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
+# ~/.config/shell/aliases.sh, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-# aliases y funciones cargadas vía rc.d/20-aliases.sh y rc.d/30-functions.sh
+# aliases y funciones cargadas vía ~/.config/shell/rc.d/20-aliases.sh y rc.d/30-functions.sh
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -109,9 +109,9 @@ fi
 [[ -d /mnt/zen/applications ]] && export PATH="$PATH:/mnt/zen/applications"
 export PATH="$HOME/.local/bin:$PATH"
 
-# Load modular bash config (interactive shells only)
+# Load modular shell config (interactive shells only)
 [[ $- != *i* ]] && return
-for f in "$HOME/.config/bash/rc.d/"*.sh; do
+for f in "$HOME/.config/shell/rc.d/"*.sh; do
   [[ -r "$f" ]] && . "$f"
 done
 unset f

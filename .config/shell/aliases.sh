@@ -42,7 +42,7 @@ alias temps='sensors 2>/dev/null || echo "install lm-sensors"'  # requires lm-se
 export EDITOR=micro
 alias e='micro'
 alias se='sudo -e'
-alias ealias='micro ~/.bash_aliases && source ~/.bash_aliases'
+alias ealias='micro ~/.config/shell/aliases.sh && source ~/.config/shell/aliases.sh'
 alias efstab='sudo -e /etc/fstab'
 alias essh='sudo -e /etc/ssh/sshd_config && (sudo systemctl restart ssh 2>/dev/null || sudo systemctl restart sshd)'
 alias enfs='micro /etc/exports && sudo exportfs -ra'
@@ -97,10 +97,10 @@ alias tik='cd ~/mikrotik'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias bin='cd ~/.local/bin'
-alias func='cd ~/.config/bash/functions.d'
+alias func='cd ~/.config/shell/functions.d'
 
 # ─────────────────────────────────────────────────────────────
-# Network  (funciones → ~/.config/bash/functions.d/network.sh)
+# Network  (funciones → ~/.config/shell/functions.d/network.sh)
 # ─────────────────────────────────────────────────────────────
 alias p='ping -i 0.2'
 alias t='traceroute'
