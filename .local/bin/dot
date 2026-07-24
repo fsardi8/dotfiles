@@ -9,6 +9,7 @@ Usage:
   dot                       # show this help
   dot st                    # yadm status
   dot ls                    # list tracked files
+  dot lsu                   # list untracked files (current dir + subdirs)
   dot lse                   # list encrypted secrets
   dot diff                  # yadm diff (local vs last commit)
   dot review                # diff local files vs origin (GitHub)
@@ -66,6 +67,10 @@ case "$cmd" in
 
   ls)
     yadm ls-files
+    ;;
+
+  lsu)
+    yadm status -u .
     ;;
 
   lse)
