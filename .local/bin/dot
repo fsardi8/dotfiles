@@ -13,6 +13,8 @@ Usage:
   dot diff                  # yadm diff (local vs last commit)
   dot review                # diff local files vs origin (GitHub)
   dot add FILE...           # stage specific files
+  dot addloc FILE...        # add FILE, tracked but only applied on this host
+  dot addos FILE...         # add FILE, tracked but only applied on this distro (debian/arch/...)
   dot encrypt FILE...       # add FILE to encrypted secrets + re-cifrar
   dot skip FILE...          # ignore local changes (this machine only)
   dot unskip FILE...        # resume tracking changes
@@ -88,6 +90,41 @@ case "$cmd" in
   add)
     [[ $# -gt 0 ]] || { echo "dot add: missing file(s)"; exit 2; }
     yadm add "$@"
+    ;;
+
+  addloc)
+    [[ $# -gt 0 ]] || { echo "dot addloc: missing file(s)"; exit 2; }
+    host="$(hostname)"
+    for f in "$@"; do
+      [[ -e "$f" ]] || { echo "dot addloc: $f not found"; exit 2; }
+      case "$f" in
+        *"##"*) echo "dot addloc: $f already has an alternates suffix"; exit 2 ;;
+      esac
+      new="${f}##hostname.${host}"
+      mv -- "$f" "$new"
+      yadm add -- "$new"
+      echo "Tracked for this host only ($host): $new"
+    done
+    yadm alt
+    echo "Commit with: dot com \"addloc: <description>\""
+    ;;
+
+  addos)
+    [[ $# -gt 0 ]] || { echo "dot addos: missing file(s)"; exit 2; }
+    distro="$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}")"
+    [[ "$distro" != "unknown" ]] || { echo "dot addos: could not detect distro from /etc/os-release"; exit 2; }
+    for f in "$@"; do
+      [[ -e "$f" ]] || { echo "dot addos: $f not found"; exit 2; }
+      case "$f" in
+        *"##"*) echo "dot addos: $f already has an alternates suffix"; exit 2 ;;
+      esac
+      new="${f}##distro.${distro}"
+      mv -- "$f" "$new"
+      yadm add -- "$new"
+      echo "Tracked for this distro only ($distro): $new"
+    done
+    yadm alt
+    echo "Commit with: dot com \"addos: <description>\""
     ;;
 
   encrypt)

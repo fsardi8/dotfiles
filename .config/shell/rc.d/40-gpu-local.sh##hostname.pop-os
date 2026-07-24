@@ -1,0 +1,6 @@
+# Machine-local only — NOT tracked by yadm/dot, stays on this pop-os laptop.
+# Requires graphics mode to be set to "hybrid" once (sudo system76-power graphics hybrid + reboot).
+# gpui: force NVIDIA dGPU off (battery saving) — kills any process holding /dev/nvidia* first
+# gpue: force NVIDIA dGPU on (use before connecting an external display)
+alias gpui='sudo fuser -k /dev/nvidia* /dev/nvidiactl /dev/nvidia-modeset 2>/dev/null; sudo system76-power graphics power off'
+alias gpue='sudo system76-power graphics power on'

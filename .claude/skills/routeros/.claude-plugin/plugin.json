@@ -1,0 +1,8 @@
+{
+  "name": "routeros",
+  "description": "MikroTik RouterOS management via SSH — zero token cost until invoked.",
+  "author": {
+    "name": "f"
+  },
+  "keywords": ["mikrotik", "routeros", "networking", "firewall", "ssh"]
+}
