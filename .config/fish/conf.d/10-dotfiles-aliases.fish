@@ -76,6 +76,7 @@ end
 # ─────────────────────────────────────────────────────────────
 alias blkidl 'blkid -o list'
 alias mntl 'mount | column -t'
+alias df 'df -h'
 alias du 'du -ch'
 alias dud 'du -d 1 -h | sort -h'
 alias biggest 'du -ah . 2>/dev/null | sort -rh | head -20'

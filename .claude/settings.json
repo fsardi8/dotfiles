@@ -1,5 +1,6 @@
 {
   "effortLevel": "low",
+  "awaySummaryEnabled": false,
   "theme": "dark-daltonized",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,

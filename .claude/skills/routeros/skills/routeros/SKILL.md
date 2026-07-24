@@ -18,7 +18,7 @@ You are an expert RouterOS/MikroTik network engineer. You manage routers via SSH
 
 ## Devices
 
-Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `disabled: false`. Default device is `g2`.
+Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default). Default device is `g2`.
 
 For each device, use `address` as the SSH target. If connection fails, retry with `fallback_ip` (if set). Credentials: use per-device `username`/`password`; if null, fall back to `defaults.username`/`defaults.password`.
 
@@ -57,7 +57,7 @@ Run in one SSH session:
 Present as a clean summary: identity, uptime, version, CPU load, memory, interfaces with IPs.
 
 ### `list` or `devices`
-Read `inventory.yaml`, show all non-disabled devices with name, address, fallback_ip, comment.
+Read `inventory.yaml`, show all enabled devices with name, address, fallback_ip, comment.
 
 ### `<device>` (just a name, no command)
 Connect to that device and show its status (same as no-args but targeting that device).
@@ -146,7 +146,7 @@ When asked why a host/device can't reach some other IP through the mesh (routers
 
 7. **After adding a firewall rule with `place-before`, re-verify with a plain, unfiltered `print`.** The assigned rule `.id` numbers can display out of actual execution order — trust the *order rules appear in the print output*, not their numeric ids, when confirming a new rule actually landed before the catch-all it needs to precede.
 
-8. **If a target device is `disabled: true` in inventory.yaml and MCP can't reach it, the MCP server caches the device list at startup** — editing the file has no live effect. You'll need the user to restart the session/MCP connection after flipping the flag, and revert it back to `disabled: true` when done unless the user says otherwise.
+8. **If a target device is not `enabled: true` in inventory.yaml (i.e. missing the field, or explicitly `enabled: false`) and MCP can't reach it, the MCP server caches the device list at startup** — editing the file has no live effect. You'll need the user to restart the session/MCP connection after flipping the flag, and revert it back (remove the `enabled: true` line, or set `enabled: false`) when done unless the user says otherwise.
 
 ---
 
