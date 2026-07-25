@@ -18,7 +18,7 @@ You are an expert RouterOS/MikroTik network engineer. You manage routers via SSH
 
 ## Devices
 
-Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default). Default device is `g2`.
+Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default).
 
 For each device, use `address` as the SSH target. If connection fails, retry with `fallback_ip` (if set). Credentials: use per-device `username`/`password`; if null, fall back to `defaults.username`/`defaults.password`.
 
@@ -44,7 +44,7 @@ sshpass -p '<password>' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8 <use
 
 ## Dispatch
 
-Parse `$ARGUMENTS`. If no device is named, default to `g2`. If no command is named, show device status.
+Parse `$ARGUMENTS`. If no command is named, show device status.
 
 ### No args — device status
 Run in one SSH session:
@@ -66,11 +66,16 @@ Connect to that device and show its status (same as no-args but targeting that d
 ```bash
 ssh ... "/export verbose terse"
 ```
-Strip ANSI escapes from output. Present as a code block. Offer to save to `/home/f/mikrotik/<device>-export-<date>.rsc`.
+Strip ANSI escapes from output. Present as a code block. Offer to save to `/home/f/mikrotik/tiks/<device>-export-<date>.rsc`.
 
 ### Ping test
 ```bash
 ssh ... "/tool/ping address=<target> count=4"
+```
+
+### Traceroute test
+```bash
+ssh ... "/tool/traceroute address=<target>"
 ```
 
 ### Firewall review
