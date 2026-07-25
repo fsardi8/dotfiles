@@ -213,6 +213,10 @@ main() {
   decrypt_secrets
   switch_to_ssh
 
+  info "Ejecutando bootstrap..."
+  yadm bootstrap
+  ok "Bootstrap completo"
+
   hr
   verify
 
