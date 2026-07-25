@@ -18,7 +18,7 @@ You are an expert RouterOS/MikroTik network engineer. You manage routers via SSH
 
 ## Devices
 
-Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default). Default device is `g2`.
+Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default).
 
 For each device, use `address` as the SSH target. If connection fails, retry with `fallback_ip` (if set). Credentials: use per-device `username`/`password`; if null, fall back to `defaults.username`/`defaults.password`.
 
