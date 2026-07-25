@@ -1,12 +1,12 @@
 {
-  "effortLevel": "low",
-  "awaySummaryEnabled": false,
-  "theme": "dark-daltonized",
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline-command.sh",
     "padding": 0
-  }
+  },
+  "effortLevel": "low",
+  "awaySummaryEnabled": false,
+  "theme": "dark-daltonized",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }

@@ -137,7 +137,8 @@ alias ofr 'ssh f@10.48.48.88'
 # `or` is a reserved fish keyword, can't be a function/alias name — use an abbreviation instead
 abbr -a or 'ssh -i ~/.ssh/oracle-micro ubuntu@193.122.224.162'
 alias ora 'ssh -i ~/.ssh/oracle-micro ubuntu@158.101.104.122'
-alias pv 'ssh root@10.48.48.99'
+alias pv 'ssh root@10.48.48.99'         # pve Viking Villa
+alias pvn 'ssh root@10.88.88.99'        # pveNUC Alma
 alias g2 'ssh f@10.85.85.1'
 alias smb 'ssh root@10.48.48.111'
 alias synct 'ssh root@10.48.48.110'
