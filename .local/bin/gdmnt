@@ -51,7 +51,6 @@ declare -A MOUNTPOINTS=(
  ["bluefiber-socios"]="$BASE_DIR/Bluefiber-Socios"
 
  ["hermes"]="$BASE_DIR/Hermes"
- ["installers"]="$BASE_DIR/Installers"
  ["lolo"]="$BASE_DIR/Lolo"
  ["u-sabana"]="$BASE_DIR/U-Sabana"
 )
@@ -76,7 +75,6 @@ FAST_REMOTES=(
  bluefiber-socios
 
  hermes
- installers
  lolo
  u-sabana
 )

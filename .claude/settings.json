@@ -1,10 +1,11 @@
 {
+  "model": "opus",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline-command.sh",
     "padding": 0
   },
-  "effortLevel": "low",
+  "effortLevel": "high",
   "awaySummaryEnabled": false,
   "theme": "dark-daltonized",
   "inputNeededNotifEnabled": true,

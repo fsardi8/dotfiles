@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+# speedcf - throughput test against speed.cloudflare.com, measured at the NIC.
+#
+#   speedcf [-t SECONDS] [-n STREAMS] [-i IFACE] [-d|-u]
+#
+# Why this exists: speedtest-cli (the Python one) is effectively single-stream
+# and picks whatever server it likes, which on this network under-reported a
+# 640 Mbps link as 7.5 Mbps. Ookla's own CLI is fine for latency/jitter/loss but
+# a single Ookla server is usually the bottleneck itself - the same link
+# measured 74 Mbps against one server and 470 against another on the same night.
+#
+# So: many parallel streams against Cloudflare's anycast endpoints, and the
+# number comes from /proc/net/dev - actual bytes on the interface, not what curl
+# reports per connection. That counts headers and background traffic too, which
+# is the honest figure for "what is this link doing right now".
+#
+# Caveats worth knowing before you trust a number:
+#   - Background traffic on the box is included. Run it idle, or subtract.
+#   - Cloudflare starts returning HTTP 429 after several download runs in a row.
+#     Upload is not affected by that, so -u still works when -d is throttled.
+#     speedcf probes for this and tells you instead of reporting a bogus 0.
+#   - /__down caps at ~50 MB per request, hence the loop rather than one big GET.
+set -uo pipefail
+
+DUR=20
+WARMUP=3
+STREAMS=16
+IFACE=""
+DO_DOWN=1
+DO_UP=1
+CHUNK=50000000
+BLOB="${TMPDIR:-/tmp}/.speedcf-blob-$CHUNK.bin"
+URL_DOWN="https://speed.cloudflare.com/__down?bytes=$CHUNK"
+URL_UP="https://speed.cloudflare.com/__up"
+
+usage() {
+  cat <<'EOF'
+speedcf - download + upload throughput against Cloudflare, measured at the NIC
+
+Usage:
+  speedcf                  # both directions, 20s each, 16 streams
+  speedcf -t 45            # 45 seconds per direction (steadier number)
+  speedcf -n 32            # 32 parallel streams
+  speedcf -d               # download only
+  speedcf -u               # upload only
+  speedcf -i eth0          # force interface (default: the one holding the route)
+
+Notes:
+  - Measures /proc/net/dev, so background traffic counts. Run it idle.
+  - Cloudflare 429s the download after repeated runs; upload keeps working.
+  - For latency, jitter, packet loss and bufferbloat use `speedtest` (Ookla)
+    instead - this tool deliberately only measures throughput.
+EOF
+}
+
+while getopts ":t:n:i:duh" opt; do
+  case "$opt" in
+    t) DUR="$OPTARG" ;;
+    n) STREAMS="$OPTARG" ;;
+    i) IFACE="$OPTARG" ;;
+    d) DO_UP=0 ;;
+    u) DO_DOWN=0 ;;
+    h) usage; exit 0 ;;
+    :) echo "speedcf: -$OPTARG needs a value" >&2; exit 2 ;;
+    \?) echo "speedcf: unknown option -$OPTARG" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+command -v curl >/dev/null || { echo "speedcf: curl not found" >&2; exit 1; }
+[[ -r /proc/net/dev ]] || { echo "speedcf: /proc/net/dev unreadable (Linux only)" >&2; exit 1; }
+[[ "$DUR" =~ ^[0-9]+$ && "$DUR" -gt 0 ]] || { echo "speedcf: -t must be a positive integer" >&2; exit 2; }
+[[ "$STREAMS" =~ ^[0-9]+$ && "$STREAMS" -gt 0 ]] || { echo "speedcf: -n must be a positive integer" >&2; exit 2; }
+
+# Default to whatever interface actually carries the default route, so this
+# stays correct on every machine the dotfiles land on.
+if [[ -z "$IFACE" ]]; then
+  IFACE=$(ip route get 1.1.1.1 2>/dev/null |
+          awk '{for (i = 1; i < NF; i++) if ($i == "dev") { print $(i+1); exit }}')
+fi
+[[ -n "$IFACE" ]] || { echo "speedcf: could not determine interface, use -i" >&2; exit 1; }
+
+# The colon after the interface name has no space when the byte count is long
+# enough, so normalise it before splitting: $2 = rx bytes, $10 = tx bytes.
+counters() {
+  sed 's/:/ /' /proc/net/dev | awk -v i="$IFACE" '$1 == i { print $2, $10 }'
+}
+read -r _rx _tx < <(counters)
+[[ -n "${_rx:-}" ]] || { echo "speedcf: interface '$IFACE' not found in /proc/net/dev" >&2; exit 1; }
+
+mbps() { awk -v b="$1" -v s="$2" 'BEGIN { printf "%.1f", b * 8 / s / 1000000 }'; }
+gib()  { awk -v b="$1" 'BEGIN { printf "%.2f", b / 1000000000 }'; }
+
+# Runs $STREAMS loops of "$@" and samples the counters over a $DUR window while
+# every stream is still saturating. Deliberately NOT "start streams, wait for
+# them, measure": a request in flight when the loop stops keeps running, so that
+# version measures a window with a long ramp-down tail and under-reports badly
+# (10s asked, 16s measured, ~40% low). Streams are stopped via a sentinel file
+# rather than kill, so no curl gets torn down mid-transfer and skews the bytes.
+run_phase() {
+  local t0 t1 r0 r1 x0 x1 flag i
+  flag=$(mktemp "${TMPDIR:-/tmp}/.speedcf-run.XXXXXX") || return 1
+  for ((i = 0; i < STREAMS; i++)); do
+    ( while [[ -e "$flag" ]]; do "$@"; done ) &
+  done
+  sleep "$WARMUP"                                   # let TCP get up to speed
+  t0=$(date +%s.%N); read -r r0 x0 < <(counters)
+  sleep "$DUR"
+  t1=$(date +%s.%N); read -r r1 x1 < <(counters)
+  rm -f "$flag"
+  wait 2>/dev/null
+  ELAPSED=$(awk -v a="$t0" -v b="$t1" 'BEGIN { printf "%.1f", b - a }')
+  RXD=$((r1 - r0)); TXD=$((x1 - x0))
+}
+
+pull() { curl -s -o /dev/null --max-time $((DUR + 15)) "$URL_DOWN"; }
+push() { curl -s -o /dev/null --max-time $((DUR + 15)) \
+              -H 'Content-Type: application/octet-stream' \
+              --data-binary "@$BLOB" "$URL_UP"; }
+
+echo "speedcf: $IFACE, $STREAMS streams, ${DUR}s per direction"
+
+if [[ $DO_DOWN -eq 1 ]]; then
+  # Probe with the real request, not a small one: Cloudflare's throttle is
+  # size-aware, so a 1 MB GET happily returns 200 while the 50 MB ones 429.
+  # --max-time just aborts the transfer; the status code is already known.
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$URL_DOWN")
+  if [[ "$code" == "429" ]]; then
+    echo "  download: SKIPPED - Cloudflare is rate-limiting us (HTTP 429), try later"
+    DO_DOWN=0
+  elif [[ "$code" != "200" ]]; then
+    echo "  download: SKIPPED - endpoint returned HTTP $code"
+    DO_DOWN=0
+  fi
+fi
+
+if [[ $DO_DOWN -eq 1 ]]; then
+  run_phase pull
+  echo "  download: $(mbps "$RXD" "$ELAPSED") Mbps  ($(gib "$RXD") GB in ${ELAPSED}s)"
+fi
+
+if [[ $DO_UP -eq 1 ]]; then
+  # Random data so nothing along the path can compress it away. Cached between
+  # runs - regenerating 50 MB of urandom every time is slower than the test.
+  if [[ ! -s "$BLOB" ]]; then
+    echo "  (generating $((CHUNK / 1000000)) MB of random data, one time)"
+    head -c "$CHUNK" /dev/urandom > "$BLOB" || {
+      echo "speedcf: could not write $BLOB" >&2; exit 1; }
+  fi
+  run_phase push
+  echo "  upload:   $(mbps "$TXD" "$ELAPSED") Mbps  ($(gib "$TXD") GB in ${ELAPSED}s)"
+fi

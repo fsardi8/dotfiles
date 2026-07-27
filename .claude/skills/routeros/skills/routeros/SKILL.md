@@ -16,6 +16,52 @@ You are an expert RouterOS/MikroTik network engineer. You manage routers via SSH
 
 ---
 
+## Which tool: this skill (SSH) vs `routeros-api` vs `mikrotik-mcp`
+
+This is the canonical decision — the other two places router work can
+happen (`routeros-api`'s `SKILL.md`, `mikrotik-mcp`) point back here rather
+than duplicating it, so update it here first if the guidance changes.
+
+**Skill-vs-skill is a free choice you make silently, mid-conversation** — no
+user action needed, just pick whichever fits and proceed:
+
+- **Default to `routeros-api`** for reads and bounded writes: `print`-type
+  lookups, `add`/`set`/`remove` on a single resource, bounded operational
+  commands (`ping` and similar). Structured JSON, no ANSI/box-drawing to
+  strip, ~30-40ms/call vs. this skill's SSH handshake+PTY overhead — the
+  right default for anything fleet-wide or repeated.
+- **Use this skill (SSH) instead** for: `/export`/config export, binary
+  backups, anything interactive or continuously-streaming (live
+  `/tool/traceroute`, continuous `/interface monitor-traffic`), or genuinely
+  arbitrary console actions the API model can't express as a bounded
+  request/response (confirmed the hard way once: an OSPF interface-template
+  reorder on `vr` needed plain SSH remove+re-add — no clean API equivalent).
+  Also use this skill if a device's `api` service isn't enabled at all.
+
+**MCP (`mikrotik-mcp`) is a different kind of choice — not a mid-task
+swap.** It only loads at session start (enabling/disabling it requires
+quitting and restarting Claude Code — see `ENABLE_MCP.sh`/`.mcp.json` in
+`/home/f/mikrotik`), unlike the two skills above, which cost nothing until
+invoked and can be switched between freely inside one conversation. That
+asymmetry means: **never suggest turning on MCP mid-conversation** as a fix
+for the task in front of you — that forces the user to abandon the running
+session. MCP is a decision the user makes *before* starting a session they
+already know will be router-heavy, not something to dynamically reach for.
+If asked whether to enable it, say so plainly rather than quietly assuming
+it, and let the user decide.
+
+If MCP is already connected (check for `mcp__routeros__*` tools in the
+current session), prefer its **minimal** mode (5 tools: `list_devices`,
+`system_info`, `command`, `config`, `ping`) over full mode (22 tools) unless
+you genuinely need the extra dedicated tools — minimal mode's generic
+`command()` covers the same ground at a fraction of the standing
+per-message token cost. Note `mcp__routeros__command` only supports
+`print`/`add`/`set`/`remove` on a path, same ceiling as `routeros-api`'s
+CRUD verbs (its own `call` verb for arbitrary operational commands has no
+MCP equivalent today).
+
+---
+
 ## Devices
 
 Read `/home/f/mikrotik/inventory.yaml` to get the current device list. Only use devices where `enabled: true` (devices without the field are disabled by default).
@@ -39,6 +85,17 @@ sshpass -p '<password>' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8 <use
 /ip route print
 "
 ```
+
+**SSH-key auth is not currently wired up anywhere** (this skill or
+`mikrotik-mcp` — its client accepts a `private_key` param but never actually
+uses it, always authenticates with `password=`), and no fleet device has a
+Claude-usable pubkey imported. Password-based `sshpass` is the working
+state; don't assume `-i <key>` will work. Keys would be a real improvement
+(drops the `sshpass` dependency, and stops a plaintext router password from
+appearing in every SSH command string — which matters most when that command
+gets fanned out through cheap subagents or background Bash for fleet
+rollouts) but that's a future per-device rollout (`/user ssh-keys import`),
+not something to assume is already done.
 
 ---
 
@@ -92,17 +149,17 @@ ssh ... "/interface print stats
 /interface monitor-traffic [find] duration=3"
 ```
 
+### Routes
+```bash
+ssh ... "/ip route print
+/ip route print where active=yes"
+```
+
 ### DHCP
 ```bash
 ssh ... "/ip dhcp-server lease print
 /ip dhcp-server print
 /ip pool print"
-```
-
-### Routes
-```bash
-ssh ... "/ip route print
-/ip route print where active=yes"
 ```
 
 ### DNS
@@ -128,9 +185,38 @@ Never apply changes without confirmation.
 
 ---
 
+## Fleet-wide rollout pattern (apply one change to many devices)
+
+This is a constantly-recurring shape of task (RADIUS server rollout, mesh
+routing-primary switch, syslog onboarding, `permitidas` gap sweep, WG
+listen-port fixes) — don't reinvent it each time:
+
+1. Read `inventory.yaml`, filter to `enabled: true`, build a per-device task
+   list (name + address + fallback_ip + whatever per-device parameter the
+   change needs).
+2. Apply mechanically — background `Bash` with `xargs -P <n>` running one
+   script per device (script takes the SSH idiom above, writes its result to
+   a per-device file), or delegate the identical step to a cheap Haiku
+   subagent if it's purely mechanical with no judgment calls (see this
+   project's memory on agent model choice). Keep planning/judgment calls
+   (which value per site, how to handle an unreachable device) with the
+   primary model — only the repetitive apply step is a good fit for
+   cheap/background execution.
+3. **Never trust an exit-0 "COMPLETE" status alone.** Independently verify
+   every device's result file afterward — grep for the expected end-state
+   and the absence of error strings, spot-check at least one file in full.
+   A script that silently no-ops (e.g. a non-executable file, a permission
+   error) can still report success at the process-exit level while doing
+   nothing on-device.
+4. Document what shipped and to which devices in the relevant `CLAUDE.md` —
+   fleet state drifts fast and the next session needs to know what's already
+   done vs. still pending.
+
+---
+
 ## Debugging cross-device reachability ("why can't X reach Y")
 
-When asked why a host/device can't reach some other IP through the mesh (routers, OSPF, WireGuard tunnels), don't guess or dump full configs — work through this checklist in order. It's ordered by cost/signal ratio: cheap, high-signal checks first, expensive live-packet tracing only if the cheap checks don't explain it. Prefer the `mcp__routeros__*` tools (routes, ospf_neighbors, firewall_filter, wireguard_peers, ping, command) over raw SSH when available — they're structured and cheaper to reason over.
+When asked why a host/device can't reach some other IP through the mesh (routers, OSPF, WireGuard tunnels), don't guess or dump full configs — work through this checklist in order. It's ordered by cost/signal ratio: cheap, high-signal checks first, expensive live-packet tracing only if the cheap checks don't explain it. Prefer structured tools over raw SSH when available — `routeros-api`'s `OSPF neighbors`/`Firewall review`/`WireGuard peers`/`Conntrack` dispatch entries, or `mcp__routeros__*` tools (routes, ospf_neighbors, firewall_filter, wireguard_peers, ping, command) if MCP happens to be connected — they're structured and cheaper to reason over than parsing SSH output.
 
 1. **OSPF adjacency + route presence, every hop.** `ospf_neighbors` should show `Full` on each hop between source and destination; `ip_routes` should show the destination subnet with a sane next-hop on every router in the path. This is cheap and rules out routing before you touch firewalls or WireGuard.
 
