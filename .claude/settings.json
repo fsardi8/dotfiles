@@ -4,10 +4,18 @@
     "command": "~/.claude/statusline-command.sh",
     "padding": 0
   },
-  "effortLevel": "high",
+  "enabledPlugins": {
+    "anthropic-skills@anthropic-tools": false
+  },
+  "effortLevel": "low",
   "awaySummaryEnabled": false,
   "theme": "dark-daltonized",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "model": "haiku"
+  "model": "haiku",
+  "modelSettings": {
+    "claude-sonnet-5": {
+      "effortLevel": "low"
+    }
+  }
 }
