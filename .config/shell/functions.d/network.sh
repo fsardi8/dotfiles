@@ -29,13 +29,13 @@ network() {
 ipuf() {
 # -------------------------
 # Cloudflare DDNS update (secrets stored separately)
-# Create ~/.config/cf-ddns.env with:
+# Create ~/.credentials/cf-ddns.env with:
 # CF_ZONE_ID=...
 # CF_API_TOKEN=...
 # CF_RECORD_NAME=...
-# and: chmod 600 ~/.config/cf-ddns.env
+# and: chmod 600 ~/.credentials/cf-ddns.env
 # -------------------------
-  local env="$HOME/.config/cf-ddns.env"
+  local env="$HOME/.credentials/cf-ddns.env"
   [[ -r "$env" ]] || { echo "Missing $env — ver README del repo dotfiles o yadm decrypt"; return 1; }
   source "$env"
 
