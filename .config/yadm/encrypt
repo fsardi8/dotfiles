@@ -4,3 +4,4 @@
 .ssh/id_rsa
 .ssh/oracle-micro
 oracle-oci
+.credentials/redsi-wp-api.txt
