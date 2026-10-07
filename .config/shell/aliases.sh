@@ -146,6 +146,6 @@ alias einv='~/mikrotik/.venv/bin/python3 ~/mikrotik/einv.py'
 # ─────────────────────────────────────────────────────────────
 # VNC (on-demand XFCE desktop; reachable from LAN/Tailscale via ufw, see CLAUDE.md)
 # ─────────────────────────────────────────────────────────────
-alias vnc-up='vncserver :1 -localhost no -geometry 1280x800'
-alias vnc-down='vncserver -kill :1'
+alias vnc-up='vncserver :0 -localhost no -geometry 1280x800'
+alias vnc-down='vncserver -kill :0'
 alias vnc-status='vncserver -list'
