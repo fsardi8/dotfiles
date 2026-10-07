@@ -8,14 +8,46 @@
     "anthropic-skills@anthropic-tools": false
   },
   "effortLevel": "low",
-  "awaySummaryEnabled": false,
-  "theme": "dark-daltonized",
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "model": "haiku",
   "modelSettings": {
     "claude-sonnet-5": {
       "effortLevel": "low"
     }
+  },
+  "awaySummaryEnabled": false,
+  "theme": "dark-daltonized",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: assume private unless the remote host and repo name indicate otherwise, or a visibility check in the transcript shows public — no remote configured for this repo, so treat working copy as private/local",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured",
+      "**Default / protected branches**: Not queryable — no git remote configured for this repo",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: Homelab LAN at 10.48.48.0/24 (Proxmox host root@10.48.48.99 and dependent VMs/LXCs) plus Tailscale-connected nodes (viking, 10.85.85.8, 10.88.88.8) — treat as this project's trusted operational network",
+      "**Source control**: The trusted repo (local working copy at /home/f/servers/pve) — no remote configured",
+      "**Trusted internal domains**: redsi.co and subdomains (nxt.redsi.co, o.redsi.co, pve.redsi.co, pihole-viking.redsi.co) — corroborated by hosts-contacted usage",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: PVE host root@10.48.48.99 (Proxmox hypervisor); Nextcloud/Collabora at nxt.redsi.co (10.48.48.112/113); Pi-hole DNS at 10.48.48.104/106; Knot rDNS at 10.48.48.53/123; Plex at 10.48.48.121; RADIUS at LXC 200",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: Proxmox/LXC configs (/etc/pve/, /etc/pve/lxc/*.conf), backup pool /srv/mrt/backups (pve, gd, kopia, machines, infra/rdns), RADIUS auth store (LXC 200) — share only with cleared homelab operator (the user)",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment; fullcam NVR (VM 100, externally managed — do not touch) and SysCafe (VM 103, ownership unresolved) treated as do-not-disturb targets per CLAUDE.md",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment; ZFS pool MrT and PVE storage config (/etc/pve/storage.cfg) treated as high-caution infra given prior data-loss incidents documented in CLAUDE.md",
+      "### User-specific",
+      "**Primary use of Claude Code**: Proxmox VE homelab operations — infra planning, runbooks, config management for host root@10.48.48.99 and its VMs/LXCs",
+      "**Trusted repo**: The git repository at /home/f/servers/pve (its working directory) — no remote configured, so treat as local-only; no push destination exists",
+      "**Org-specific CLIs**: sshpass, speedtest, iperf3 (used routinely in this project per usage recon)",
+      "**Routine under root@10.48.48.99 prefix**: SSH/administrative commands against the Proxmox host and its listed VMs/LXCs (10.48.48.0/24) are routine for this project"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(zpool destroy:*) — scoped to MrT pool per CLAUDE.md do-not-disturb guidance",
+      "Bash(qm stop:*) and Bash(pct stop:*) targeting VM 100 (fullcam, externally managed NVR) or VM 103 (SysCafe, deliberately left without onboot pending ownership review)"
+    ]
   }
 }

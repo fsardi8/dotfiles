@@ -142,3 +142,10 @@ alias clr='claude --resume --strict-mcp-config --mcp-config ~/.claude/mcp-empty.
 alias clm='claude --strict-mcp-config --mcp-config /home/f/mikrotik/.mcp.json'
 alias clmr='claude --resume --strict-mcp-config --mcp-config /home/f/mikrotik/.mcp.json'
 alias einv='~/mikrotik/.venv/bin/python3 ~/mikrotik/einv.py'
+
+# ─────────────────────────────────────────────────────────────
+# VNC (on-demand XFCE desktop, localhost-only, SSH-tunnel in)
+# ─────────────────────────────────────────────────────────────
+alias vnc-up='vncserver :1 -localhost yes -geometry 1280x800'
+alias vnc-down='vncserver -kill :1'
+alias vnc-status='vncserver -list'
