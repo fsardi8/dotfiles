@@ -82,7 +82,7 @@ unset _fd
 
 alias ls='eza --icons'                   # eza replaces ls
 alias l='eza --icons'
-alias ll='eza -lah --icons --git'        # long + hidden + human sizes + git status
+alias ll='eza -lahg --icons --git'       # long + hidden + human sizes + group + git status
 alias lt='eza --tree --level=2 --icons'  # tree view, 2 levels deep
 alias la='eza -a --icons'
 

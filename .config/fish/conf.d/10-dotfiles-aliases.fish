@@ -100,7 +100,7 @@ test -n "$_fd"; and alias fd "$_fd"
 
 alias ls 'eza --icons'
 alias l 'eza --icons'
-alias ll 'eza -lah --icons --git'
+alias ll 'eza -lahg --icons --git'
 alias lt 'eza --tree --level=2 --icons'
 alias la 'eza -a --icons'
 
