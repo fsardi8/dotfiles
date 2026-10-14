@@ -210,15 +210,15 @@ case "$cmd" in
 
     # 2. Install yadm
     echo "→  Installing yadm..."
-    ssh -t "$target" "
+    ssh -t "$target" "bash -s" <<'REMOTE'
       if command -v apt-get &>/dev/null; then
         missing=()
         command -v yadm   &>/dev/null || missing+=(yadm)
         command -v gpg    &>/dev/null || missing+=(gnupg)
         command -v rclone &>/dev/null || missing+=(rclone)
         command -v git    &>/dev/null || missing+=(git)
-        if [[ \${#missing[@]} -gt 0 ]]; then
-          sudo apt-get update -q && sudo apt-get install -y -q \"\${missing[@]}\"
+        if [[ ${#missing[@]} -gt 0 ]]; then
+          sudo apt-get update -q && sudo apt-get install -y -q "${missing[@]}"
         fi
       elif command -v pacman &>/dev/null; then
         missing=()
@@ -226,23 +226,25 @@ case "$cmd" in
         command -v gpg    &>/dev/null || missing+=(gnupg)
         command -v rclone &>/dev/null || missing+=(rclone)
         command -v git    &>/dev/null || missing+=(git)
-        [[ \${#missing[@]} -gt 0 ]] && sudo pacman -S --noconfirm --needed \"\${missing[@]}\"
+        if [[ ${#missing[@]} -gt 0 ]]; then
+          sudo pacman -S --noconfirm --needed "${missing[@]}"
+        fi
       else
-        echo 'ERROR: unsupported package manager'; exit 1
+        echo "ERROR: unsupported package manager"; exit 1
       fi
-    "
+REMOTE
     echo "✔  yadm ready"
 
     # 3. Clone dotfiles (no-bootstrap so we can decrypt first)
     echo "→  Cloning dotfiles..."
-    ssh "$target" "
+    ssh "$target" "bash -s -- $DOTFILES_REPO" <<'REMOTE'
       if ! yadm status &>/dev/null 2>&1; then
         ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-        yadm clone --no-bootstrap '$DOTFILES_REPO'
+        yadm clone --no-bootstrap "$1"
       else
-        echo 'yadm already initialized, skipping clone'
+        echo "yadm already initialized, skipping clone"
       fi
-    "
+REMOTE
     echo "✔  Dotfiles cloned"
 
     # 4. NOPASSWD sudo — makes the rest of setup scriptable
@@ -259,23 +261,23 @@ case "$cmd" in
     echo "  Copy the full block (BEGIN/END lines included)"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    ssh -t "$target" "
+    ssh -t "$target" "bash -c '
       set -e
       GPG_KEY_ID=A28F843C63852BF6
       if gpg --list-secret-keys \"\$GPG_KEY_ID\" &>/dev/null; then
-        echo '✔  GPG key already imported'
+        echo \"✔  GPG key already imported\"
       else
         tmpf=\$(mktemp)
-        echo 'Paste GPG key then press Ctrl+D:'
+        echo \"Paste GPG key then press Ctrl+D:\"
         cat > \"\$tmpf\"
         gpg --import \"\$tmpf\"
         rm -f \"\$tmpf\"
       fi
-      fpr=\$(gpg --list-secret-keys --with-colons \"\$GPG_KEY_ID\" | awk -F: '/^fpr/{print \$10; exit}')
+      fpr=\$(gpg --list-secret-keys --with-colons \"\$GPG_KEY_ID\" | awk -F: \"/^fpr/{print \\\$10; exit}\")
       echo \"\$fpr:6:\" | gpg --import-ownertrust
       yadm decrypt
       chmod 600 ~/.ssh/id_ed25519 ~/.ssh/id_rsa 2>/dev/null || true
-    "
+    '"
     echo "✔  Secrets decrypted"
 
     # 6. Run yadm bootstrap
