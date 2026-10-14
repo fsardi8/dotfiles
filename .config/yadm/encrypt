@@ -5,3 +5,4 @@
 .ssh/oracle-micro
 .credentials/oracle-oci
 .credentials/redsi-wp-api.txt
+.keys/.tailscale-api-key
