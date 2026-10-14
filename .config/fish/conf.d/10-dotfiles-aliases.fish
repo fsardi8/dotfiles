@@ -145,6 +145,7 @@ alias synct 'ssh root@10.48.48.110'
 alias vr 'ssh f@10.48.48.1'
 alias vb 'ssh f@10.47.48.0'
 alias vk 'ssh f@10.48.48.101'
+alias cs 'ssh f@cassandra'          # cassandra (tailscale)
 alias sshkey 'ssh-copy-id -i ~/.ssh/id_ed25519.pub'
 
 # ─────────────────────────────────────────────────────────────
