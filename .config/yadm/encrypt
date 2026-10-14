@@ -1,8 +1,8 @@
-.credentials/cf-ddns.env
+.keys/cf-ddns.env
 .config/rclone/rclone.conf
 .ssh/id_ed25519
 .ssh/id_rsa
 .ssh/oracle-micro
-.credentials/oracle-oci
-.credentials/redsi-wp-api.txt
+.keys/oracle-oci
+.keys/redsi-wp-api.txt
 .keys/.tailscale-api-key
